@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>audio test</title>
+<base href="..">
+<script src="../UFX/src/resource.js"></script>
+<script src="../UFX/src/audio.js"></script>
+<script src="src/audio.js"></script>
+<body>
+<h1>audio test</h1>
+<p><button type=button onclick="audio.startgamemusic()">start game music</button>
+<p><button type=button onclick="audio.startendmusic()">start end music</button>
+<p><button type=button onclick="audio.stopmusic()">stop music</button>
+<p><input id=musicvolume type="range" min=0 max=100 onchange="setmusicvolume()"> Music volume
+<p><button type=button onclick="audio.tofly()">To fly</button>
+<p><button type=button onclick="audio.tochoose()">To choose</button>
+<script>
+"use strict"
+window.onerror = function (error, url, line) {
+	document.body.innerHTML = "<p>Error in: "+url+"<p>line "+line+"<pre>"+error+"</pre>"
+}
+function setmusicvolume() {
+	let volume = 0.01 * document.getElementById("musicvolume").value
+	audio.setmusicvolume(volume)
+}
+
+audio.init()
+UFX.resource.onload = function () {
+	setmusicvolume()
+}
+</script>
+
