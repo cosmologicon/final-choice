@@ -11,7 +11,10 @@
 <p><button type=button onclick="audio.startgamemusic()">start game music</button>
 <p><button type=button onclick="audio.startendmusic()">start end music</button>
 <p><button type=button onclick="audio.stopmusic()">stop music</button>
+<p><button type=button onclick="audio.playvoiceover('intro')">play intro voiceover</button>
+<p><button type=button onclick="audio.playline('Danilowka2')">play line</button>
 <p><input id=musicvolume type="range" min=0 max=100 onchange="setmusicvolume()"> Music volume
+<p><input id=dialogvolume type="range" min=0 max=100 onchange="setdialogvolume()"> Dialog volume
 <p><button type=button onclick="audio.tofly()">To fly</button>
 <p><button type=button onclick="audio.tochoose()">To choose</button>
 <script>
@@ -23,8 +26,13 @@ function setmusicvolume() {
 	let volume = 0.01 * document.getElementById("musicvolume").value
 	audio.setmusicvolume(volume)
 }
+function setdialogvolume() {
+	let volume = 0.01 * document.getElementById("dialogvolume").value
+	audio.setdialogvolume(volume)
+}
 
 audio.init()
+setInterval((() => audio.think(0.1)), 100)
 UFX.resource.onload = function () {
 	setmusicvolume()
 }
