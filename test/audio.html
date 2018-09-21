@@ -5,6 +5,7 @@
 <base href="..">
 <script src="../UFX/src/resource.js"></script>
 <script src="../UFX/src/audio.js"></script>
+<script src="../UFX/src/random.js"></script>
 <script src="src/audio.js"></script>
 <body>
 <h1>audio test</h1>
@@ -13,8 +14,10 @@
 <p><button type=button onclick="audio.stopmusic()">stop music</button>
 <p><button type=button onclick="audio.playvoiceover('intro')">play intro voiceover</button>
 <p><button type=button onclick="audio.playline('Danilowka2')">play line</button>
+<p><button type=button onclick="audio.playsfx('shot')">play sfx</button>
 <p><input id=musicvolume type="range" min=0 max=100 onchange="setmusicvolume()"> Music volume
 <p><input id=dialogvolume type="range" min=0 max=100 onchange="setdialogvolume()"> Dialog volume
+<p><input id=sfxvolume type="range" min=0 max=100 onchange="setsfxvolume()"> Sfx volume
 <p><button type=button onclick="audio.tofly()">To fly</button>
 <p><button type=button onclick="audio.tochoose()">To choose</button>
 <script>
@@ -29,6 +32,10 @@ function setmusicvolume() {
 function setdialogvolume() {
 	let volume = 0.01 * document.getElementById("dialogvolume").value
 	audio.setdialogvolume(volume)
+}
+function setsfxvolume() {
+	let volume = 0.01 * document.getElementById("sfxvolume").value
+	audio.setsfxvolume(volume)
 }
 
 audio.init()

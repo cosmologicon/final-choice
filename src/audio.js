@@ -2,10 +2,17 @@
 "use strict"
 let audio = {
 	// The quiet factor is a per-sfx value that is used to attenuate the sound effect's volume if
-	// it's played multiple times in fast succession.
+	// it's played multiple times in fast succession. Every time a sound is played its corresponding
+	// quiet factor is increased by 1, and all quiet factors decay back to 0 over time. The larger
+	// the quiet factor when a sound is played, the quieter the sound.
 	quiet: {},
 
 	tmusicfade: 2,
+
+	// The gamma factor controls how the volume slider relates to the actual amplitude of the wave
+	// form. A gamma factor greater than 1 means you have finer control at low volumes, and a gamma
+	// factor less than 1 means you have finer control at high volumes.
+	gamma: 1.7,
 
 	init: function () {
 		UFX.audio.init()
@@ -35,6 +42,9 @@ let audio = {
 				buffers[sname] = "data/dialog/" + sname + ".ogg"
 			}
 		}
+		;"boom boss-die enemy-die enemy-hurt get select shot0 shot1 shot2 start you-die you-hurt".split(" ").forEach(sname => {
+			buffers[sname] = "data/sfx/" + sname + ".ogg"
+		})
 		UFX.audio.loadbuffers(buffers)
 		this.musicnodes = []
 		this.voqueue = []
@@ -42,6 +52,18 @@ let audio = {
 	},
 	think: function (dt) {
 		if (this.voqueue.length && !this.vonode) this._advancevoqueue()
+		let f = Math.exp(-2 * dt)
+		for (let sname in this.quiet) this.quiet[sname] *= f
+	},
+
+	playsfx: function (sname) {
+		if (!UFX.audio.context) return
+		let Q = this.quiet[sname] || 0
+		let volume = Math.exp(-Q)
+		let bname = sname
+		if (bname == "shot") bname += UFX.random.choice([0, 1, 2])
+		UFX.audio.playbuffer(bname, { output: "sfx", gain: volume }),
+		this.quiet[sname] = Q + 1
 	},
 
 	stopmusic: function () {
@@ -67,13 +89,17 @@ let audio = {
 		UFX.audio.setgain("fly_gain", 0, {fade: this.tmusicfade})
 		UFX.audio.setgain("choose_gain", 1, {fade: this.tmusicfade})
 	},
+	setsfxvolume: function (volume) {
+		if (!UFX.audio.context) return
+		UFX.audio.setgain("sfx", Math.pow(volume, this.gamma))
+	},
 	setmusicvolume: function (volume) {
 		if (!UFX.audio.context) return
-		UFX.audio.setgain("music", Math.pow(volume, 1.9))
+		UFX.audio.setgain("music", Math.pow(volume, this.gamma))
 	},
 	setdialogvolume: function (volume) {
 		if (!UFX.audio.context) return
-		UFX.audio.setgain("dialog", Math.pow(volume, 1.9))
+		UFX.audio.setgain("dialog", Math.pow(volume, this.gamma))
 	},
 	
 	startendmusic: function () {
