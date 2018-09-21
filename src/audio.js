@@ -1,4 +1,7 @@
 
+// If init is not called, or the Web Audio context is disabled for whatever reason, then all methods
+// of this object are no-ops, and are safe to call.
+
 "use strict"
 let audio = {
 	// The quiet factor is a per-sfx value that is used to attenuate the sound effect's volume if
@@ -16,12 +19,13 @@ let audio = {
 
 	init: function () {
 		UFX.audio.init()
-		UFX.audio.makegainnode({ name: "sound" })
+		UFX.audio.makegainnode({ name: "main" })  // Only adjusted during pausing.
+		UFX.audio.makegainnode({ name: "sound", output: "main" })
 		UFX.audio.makegainnode({ name: "sfx", output: "sound" })
 		UFX.audio.makegainnode({ name: "music", output: "sound" })
 		UFX.audio.makegainnode({ name: "gamemusic", output: "music" })
 		UFX.audio.makegainnode({ name: "endmusic", output: "music" })
-		UFX.audio.makegainnode({ name: "dialog" })
+		UFX.audio.makegainnode({ name: "dialog", output: "main" })
 		UFX.audio.setgain("endmusic", 0)
 		UFX.audio.setgain("dialog", 1)
 
@@ -49,11 +53,40 @@ let audio = {
 		this.musicnodes = []
 		this.voqueue = []
 		this.vonode = null
+		this.on = true
+		this.offtimer = 0
 	},
 	think: function (dt) {
 		if (this.voqueue.length && !this.vonode) this._advancevoqueue()
 		let f = Math.exp(-2 * dt)
 		for (let sname in this.quiet) this.quiet[sname] *= f
+		if (this.offtimer) {
+			this.offtimer = Math.max(this.offtimer - dt, 0)
+			if (!this.offtimer) this.suspend()
+		}
+	},
+	suspend: function () {
+		if (!UFX.audio.context) return
+		UFX.audio.context.suspend()
+		this.on = false
+	},
+	resume: function () {
+		if (!UFX.audio.context) return
+		UFX.audio.context.resume()
+		this.on = true
+	},
+	fadeout: function (dt) {
+		if (!UFX.audio.context) return
+		if (dt === undefined) dt = 0.3
+		UFX.audio.setgain("main", 0, { fade: dt })
+		this.offtimer = dt
+	},
+	fadein: function (dt) {
+		if (!UFX.audio.context) return
+		if (dt === undefined) dt = 0.3
+		if (this.offtimer) this.offtimer = 0
+		this.resume()
+		UFX.audio.setgain("main", 1, { fade: dt })
 	},
 
 	playsfx: function (sname) {
