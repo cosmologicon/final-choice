@@ -12,7 +12,7 @@ let draw = {
 		}
 		UFX.gltext.init(gl)
 		canvas.style.background = "black"
-		this.portrait = false
+		this.portrait = true
 		pUbuffer = gl.makeArrayBuffer([-1, -1, 1, -1, 1, 1, -1, 1])
 		for (let name in shaders) {
 			gl.addProgram(name, shaders[name].vert, shaders[name].frag)
@@ -34,31 +34,65 @@ let draw = {
 
 		this.nstar = 10000
 		let stardata = []
-		for (let j = 0 ; j < this.nstar * 3 ; ++j) stardata.push(UFX.random())
+		for (let j = 0 ; j < this.nstar ; ++j) {
+			let z = UFX.random.rand(4, 16)
+			stardata.push(UFX.random(), UFX.random(), z)
+		}
 		this.starbuffer = gl.makeArrayBuffer(stardata)
 	},
-
-	startalk: function () {
+	clear: function () {
 		gl.clearColor(0, 0, 0, 1)
 		gl.clear(gl.COLOR_BUFFER_BIT)
-		gl.progs.startalk.use()
-		gl.progs.startalk.set({
+	},
+
+	_star: function (prog, sfactor, Tfactor) {
+		prog.use()
+		prog.set({
 			screen: [this.wV, this.hV],
-			T: Date.now() / 30000 % 1,
+			T: Date.now() / (Tfactor * 1000) % 1,
 		})
 		this.starbuffer.bind()
-		gl.progs.startalk.assignAttribOffsets({
+		prog.assignAttribOffsets({
 			star: 0,
 		})
-		let n = Math.min(this.nstar, Math.floor(0.004 * this.wV * this.hV))
+		let n = Math.min(this.nstar, Math.floor(sfactor * this.wV * this.hV))
 		gl.drawArrays(gl.POINTS, 0, n)
+	},
+	starfly: function () {
+		this._star(gl.progs.starfly, 0.002, 100)
+	},
+	startalk: function () {
+		this._star(gl.progs.startalk, 0.004, 300)
 	},
 }
 
 
 const shaders = {
 	startalk: {},
+	starfly: {},
 }
+
+// Stars during the main gameplay, moving across the screen.
+shaders.starfly.vert = `
+attribute vec3 star;
+uniform float T;   // Range [0, 1)
+uniform vec2 screen;  // screen size in pixels
+varying float c;
+void main() {
+	vec2 pos = vec2(star.x, mod(star.y - star.z * T, 1.0)) * 2.0 - 1.0;
+	if (screen.x > screen.y) pos.xy = pos.yx;
+	gl_Position = vec4(pos, 0.0, 1.0);
+	c = star.z / 15.0;
+}
+`
+shaders.starfly.frag = `
+precision highp float;
+varying float c;
+void main() {
+	vec3 color = vec3(c);
+	gl_FragColor = vec4(color, 1.0);
+}
+`
 
 // Stars during visits and various menu scenes, radiating outward from the center.
 shaders.startalk.vert = `
@@ -68,8 +102,9 @@ uniform vec2 screen;  // screen size in pixels
 varying float c;
 void main() {
 	float s = length(screen);
-	float r = pow(mod(star.z + T, 1.0), 3.0);
-	c = clamp(1.6 * r * mod(star.z * 100.0, 1.0), 0.0, 1.0);
+	float r = mod(T * star.z + 1000.0 * star.x, 1.0);
+	// r = pow(r, 3.0);
+	c = clamp(1.6 * r * star.z / 15.0, 0.0, 1.0);
 	vec2 pos = normalize(star.xy * 2.0 - 1.0) * r;
 	pos = s * (pos / screen);
 	gl_Position = vec4(pos, 0.0, 1.0);
