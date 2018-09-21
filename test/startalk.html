@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>star (visit scene) test</title>
+<base href="..">
+<script src="../UFX/src/gl.js"></script>
+<script src="../UFX/src/gltext.js"></script>
+<script src="../UFX/src/maximize.js"></script>
+<script src="../UFX/src/random.js"></script>
+<script src="../UFX/src/ticker.js"></script>
+<script src="src/draw.js"></script>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+"use strict"
+window.onerror = function (error, url, line) {
+	document.body.innerHTML = "<p>Error in: "+url+"<p>line "+line+"<pre>"+error+"</pre>"
+}
+draw.init()
+function think(dt) {
+	draw.startalk()
+}
+UFX.ticker.init(think)
+</script>
+
