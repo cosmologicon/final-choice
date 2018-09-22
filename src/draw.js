@@ -1,5 +1,10 @@
 // Shaders
 
+
+// Dedicated textures:
+// 0: UFX.gltext
+// 1: nebula
+
 "use strict"
 let gl, pUbuffer
 let draw = {
@@ -39,10 +44,36 @@ let draw = {
 			stardata.push(UFX.random(), UFX.random(), z)
 		}
 		this.starbuffer = gl.makeArrayBuffer(stardata)
+
+		let data = []
+		while (data.length < 64 * 64 * 3) data.push(UFX.random.rand(0, 255))
+		this.nebulatexture = gl.buildTexture({
+			pixels: Uint8Array.from(data),
+			size: 64,
+			format: gl.RGB,
+			mipmap: false,
+			filter: gl.LINEAR,
+		})
+		gl.activeTexture(gl.TEXTURE1)
+		gl.bindTexture(gl.TEXTURE_2D, this.nebulatexture)
 	},
 	clear: function () {
 		gl.clearColor(0, 0, 0, 1)
 		gl.clear(gl.COLOR_BUFFER_BIT)
+	},
+	nebula: function (color1, color2) {
+		gl.progs.nebula.use()
+		gl.progs.nebula.set({
+			screen: [this.wV, this.hV],
+			T: Date.now() / 100000 % 1,
+			color1: color1,
+			color2: color2,
+		})
+		pUbuffer.bind()
+		gl.progs.nebula.assignAttribOffsets({
+			pU: 0,
+		})
+		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
 	},
 
 	_star: function (prog, sfactor, Tfactor) {
@@ -70,6 +101,7 @@ let draw = {
 const shaders = {
 	startalk: {},
 	starfly: {},
+	nebula: {},
 }
 
 // Stars during the main gameplay, moving across the screen.
@@ -118,4 +150,37 @@ void main() {
 	gl_FragColor = vec4(color, 1.0);
 }
 `
+
+// Background nebula during the main gameplay
+shaders.nebula.vert = `
+attribute vec2 pU;
+uniform vec2 screen;
+uniform float T;
+varying vec2 pT;
+void main() {
+	pT = pU * 0.05;
+	pT.y *= 16.0 / 9.0;
+	pT.y += T;
+	gl_Position = vec4(pU, 0.0, 1.0);
+	if (screen.x > screen.y) pT.xy = pT.yx;
+}
+`
+shaders.nebula.frag = `
+precision highp float;
+uniform sampler2D texture;
+uniform vec3 color1, color2;
+varying vec2 pT;
+void main() {
+	float f = 0.4;
+	float a = texture2D(texture, 21.0 * pT).r;
+	a = mix(a, texture2D(texture, 13.0 * pT).g, f);
+	a = mix(a, texture2D(texture, 8.0 * pT).b, f);
+	a = mix(a, texture2D(texture, 5.0 * pT + 0.4).r, f);
+	a = mix(a, texture2D(texture, 3.0 * pT + 0.4).g, f);
+	a = mix(a, texture2D(texture, 1.0 * pT + 0.4).b, f);
+	vec3 color = mix(color1, color2, a);
+	gl_FragColor = vec4(a * color, 1.0);
+}
+`
+
 

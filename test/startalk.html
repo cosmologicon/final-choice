@@ -18,9 +18,10 @@ window.onerror = function (error, url, line) {
 }
 draw.init()
 function think(dt) {
-	draw.clear()
-	draw.startalk()
-//	draw.starfly()
+//	draw.clear()
+	draw.nebula([0, 0, 0.3], [0.3, 0, 0.1])
+//	draw.startalk()
+	draw.starfly()
 }
 UFX.ticker.init(think)
 </script>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>nebula test</title>
+<base href="..">
+<script src="../UFX/src/gl.js"></script>
+<script src="../UFX/src/gltext.js"></script>
+<script src="../UFX/src/maximize.js"></script>
+<script src="../UFX/src/random.js"></script>
+<script src="../UFX/src/ticker.js"></script>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+"use strict"
+window.onerror = function (error, url, line) {
+	document.body.innerHTML = "<p>Error in: "+url+"<p>line "+line+"<pre>"+error+"</pre>"
+}
+let canvas = document.getElementById("canvas")
+let gl = UFX.gl(canvas), wV, hV
+gl.disable(gl.DEPTH_TEST)
+gl.enable(gl.BLEND)
+gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, 0, 1)
+
+let pU = gl.makeArrayBuffer([-1, -1, 1, -1, 1, 1, -1, 1])
+let data = []
+while (data.length < 64 * 64 * 3) data.push(UFX.random.rand(0, 255))
+let texture = gl.buildTexture({
+	pixels: Uint8Array.from(data),
+	size: 64,
+	format: gl.RGB,
+	mipmap: false,
+//	wrap,
+	filter: gl.LINEAR,
+})
+gl.activeTexture(gl.TEXTURE0)
+gl.bindTexture(gl.TEXTURE_2D, texture)
+
+let vert = `
+// attribute float T;  // Animation ticker 0 <= T < 1
+attribute vec2 pU;
+// uniform vec2 screensizeV;
+varying vec2 pT;
+void main() {
+	pT = pU * vec2(2.0, 1.0) * 0.05;
+	gl_Position = vec4(pU, 0.0, 1.0);
+}
+`
+let frag = `
+precision highp float;
+
+uniform sampler2D texture;
+uniform vec3 color1, color2;
+varying vec2 pT;
+void main() {
+	/*
+	float a = 0.4 * texture2D(texture, p).r;
+	a += 0.3 * texture2D(texture, p * 3.0).b;
+	a += 0.15 * texture2D(texture, p * 5.0).g;
+	a += 0.1 * texture2D(texture, p * 8.0).r;
+	a += 0.08 * texture2D(texture, p * 13.0).b;
+	*/
+	float f = 0.4;
+	float a = texture2D(texture, 21.0 * pT).r;
+	a = mix(a, texture2D(texture, 13.0 * pT).g, f);
+	a = mix(a, texture2D(texture, 8.0 * pT).b, f);
+	a = mix(a, texture2D(texture, 5.0 * pT + 0.4).r, f);
+	a = mix(a, texture2D(texture, 3.0 * pT + 0.4).g, f);
+	a = mix(a, texture2D(texture, 1.0 * pT + 0.4).b, f);
+	vec3 color = mix(color1, color2, a);
+	gl_FragColor = vec4(a * color, 1.0);
+}
+`
+gl.addProgram("nebula", vert, frag)
+
+
+setTimeout((() => window.scrollTo(0, 1)), 1)
+UFX.maximize.onadjust = (canvas, w, h, aspect) => {
+	wV = canvas.width
+	hV = canvas.height
+	canvas.style.width = w + "px"
+	canvas.style.height = h + "px"
+	gl.viewport(0, 0, wV, hV)
+}
+UFX.maximize(canvas)
+function think(dt) {
+	gl.clearColor(0, 0, 0, 1)
+	gl.clear(gl.COLOR_BUFFER_BIT)
+	gl.progs.nebula.use()
+	gl.progs.nebula.set({
+		texture: 0,
+		color1: [0, 0, 0.2],
+		color2: [0.2, 0, 0.1],
+	})
+	pU.bind()
+	gl.progs.nebula.assignAttribOffsets({
+		pU: 0,
+	})
+	gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
+}
+UFX.ticker.init(think)
+</script>
+
