@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>sprite test</title>
+<base href="..">
+<script src="../UFX/src/gl.js"></script>
+<script src="../UFX/src/gltext.js"></script>
+<script src="../UFX/src/maximize.js"></script>
+<script src="../UFX/src/resource.js"></script>
+<script src="../UFX/src/random.js"></script>
+<script src="../UFX/src/ticker.js"></script>
+<script src="src/draw.js"></script>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+"use strict"
+window.onerror = function (error, url, line) {
+	document.body.innerHTML = "<p>Error in: "+url+"<p>line "+line+"<pre>"+error+"</pre>"
+}
+draw.load()
+draw.portrait = true
+let spritedata = [
+	{ imgname: "you", x: 300, y: 300, scale: 1, A: 0, },
+	{ imgname: "you", x: 300, y: 500, scale: 0.5, A: 0.6, },
+]
+function think(dt) {
+	draw.clear()
+	draw.sprites(spritedata)
+}
+UFX.resource.onload = () => {
+	draw.init()
+	UFX.ticker.init(think)
+}
+</script>
+

@@ -5,6 +5,7 @@
 // 0: UFX.gltext
 // 1: nebula
 // 2: rocks
+// 3: sprites
 
 "use strict"
 
@@ -27,7 +28,11 @@ function builddata(objs, fvals) {
 
 let draw = {
 	load: function () {
-		UFX.resource.load({ rocks: "data/rocks.png" })
+		UFX.resource.load({
+			rocks: "data/rocks.png",
+			sprites: "data/sprites.png",
+		})
+		this.portrait = true
 	},
 	init: function () {
 		this.pixelratio = window.devicePixelRatio || 1
@@ -38,7 +43,6 @@ let draw = {
 		}
 		UFX.gltext.init(gl)
 		canvas.style.background = "black"
-		this.portrait = true
 		pUbuffer = gl.makeArrayBuffer([-1, -1, 1, -1, 1, 1, -1, 1])
 		for (let name in shaders) {
 			gl.addProgram(name, shaders[name].vert, shaders[name].frag)
@@ -53,7 +57,7 @@ let draw = {
 			gl.viewport(0, 0, this.wV, this.hV)
 			this.aspect = aspect
 		}
-		UFX.maximize(canvas, { aspects: [this.portrait ? 9/16 : 16/9], fillcolor: "black" })
+		UFX.maximize(canvas, { aspects: [this.portrait ? 9/16 : 16/9], fillcolor: "#111" })
 		gl.disable(gl.DEPTH_TEST)
 		gl.enable(gl.BLEND)
 		gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, 0, 1)
@@ -80,9 +84,17 @@ let draw = {
 
 		this.rocktexture = gl.buildTexture({
 			source: UFX.resource.images.rocks,
+			min_filter: gl.LINEAR_MIPMAP_NEAREST,
 		})
 		gl.activeTexture(gl.TEXTURE2)
 		gl.bindTexture(gl.TEXTURE_2D, this.rocktexture)
+
+		this.spritetexture = gl.buildTexture({
+			source: UFX.resource.images.sprites,
+			min_filter: gl.LINEAR_MIPMAP_NEAREST,
+		})
+		gl.activeTexture(gl.TEXTURE3)
+		gl.bindTexture(gl.TEXTURE_2D, this.spritetexture)
 	},
 	clear: function () {
 		gl.clearColor(0, 0, 0, 1)
@@ -102,25 +114,6 @@ let draw = {
 		})
 		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
 	},
-	rocks: function (rockdata) {
-		let data = builddata(rockdata, rock => [rock.x, rock.y, rock.r, rock.T, 1, 0, 0])
-		if (!data.length) return
-		gl.progs.rock.use()
-		gl.progs.rock.set({
-			screen: [this.wV, this.hV],
-			texture: 2,
-		})
-		gl.makeArrayBuffer(data).bind()
-		gl.progs.rock.assignAttribOffsets({
-			pU: 0,
-			center: 2,
-			r: 4,
-			T: 5,
-			color: 6,
-		})
-		gl.drawArrays(gl.TRIANGLES, 0, data.nvert)
-	},
-
 	_star: function (prog, sfactor, Tfactor) {
 		prog.use()
 		prog.set({
@@ -140,6 +133,77 @@ let draw = {
 	startalk: function () {
 		this._star(gl.progs.startalk, 0.004, 300)
 	},
+
+	rocks: function (rockdata) {
+		let data = builddata(rockdata, rock => [rock.x, rock.y, rock.r, rock.T, 1, 0, 0])
+		if (!data.length) return
+		gl.progs.rock.use()
+		gl.progs.rock.set({
+			screen: [this.wV, this.hV],
+			texture: 2,
+		})
+		gl.makeArrayBuffer(data).bind()
+		gl.progs.rock.assignAttribOffsets({
+			pU: 0,
+			center: 2,
+			r: 4,
+			T: 5,
+			color: 6,
+		})
+		gl.drawArrays(gl.TRIANGLES, 0, data.nvert)
+	},
+	sprites: function (sdata) {
+		let data = builddata(sdata, sprite => {
+			let [tx, ty, tw, th] = Tdata[sprite.imgname]
+			return [sprite.x, sprite.y, tx, ty, tw, th, sprite.scale, sprite.A, 1, 1, 1]
+		})
+		if (!data.length) return
+		gl.progs.sprite.use()
+		gl.progs.sprite.set({
+			screen: [this.wV, this.hV],
+			texture: 3,
+		})
+		gl.makeArrayBuffer(data).bind()
+		gl.progs.sprite.assignAttribOffsets({
+			pU: 0,
+			pos: 2,
+			tcenter: 4,
+			tsize: 6,
+			scale: 8,
+			A: 9,
+			color: 10,
+		})
+		gl.drawArrays(gl.TRIANGLES, 0, data.nvert)
+	},
+
+
+}
+
+// Position and size of the sprite within the texture sheet
+const Tdata = {
+	"rift-1": [0.146484375, 0.146484375, 0.146484375, 0.146484375],
+	"rift-3": [0.443359375, 0.146484375, 0.146484375, 0.146484375],
+	"rift-2": [0.740234375, 0.146484375, 0.146484375, 0.146484375],
+	"health0": [0.93359375, 0.07177734375, 0.04296875, 0.07177734375],
+	"rift-0": [0.146484375, 0.443359375, 0.146484375, 0.146484375],
+	"hawk": [0.40087890625, 0.40087890625, 0.10400390625, 0.10400390625],
+	"you": [0.64306640625, 0.37451171875, 0.13427734375, 0.07763671875],
+	"gabriel": [0.88037109375, 0.38623046875, 0.09912109375, 0.08935546875],
+	"heron": [0.08642578125, 0.681640625, 0.08642578125, 0.087890625],
+	"medusa": [0.26171875, 0.67333984375, 0.0849609375, 0.07958984375],
+	"cutter": [0.44970703125, 0.65771484375, 0.09912109375, 0.06396484375],
+	"egret": [0.6240234375, 0.6650390625, 0.0712890625, 0.0712890625],
+	"swallow": [0.77001953125, 0.6640625, 0.07080078125, 0.0703125],
+	"snake": [0.9111328125, 0.6611328125, 0.06640625, 0.0673828125],
+	"duck": [0.05712890625, 0.83837890625, 0.05712890625, 0.06494140625],
+	"shield": [0.1611328125, 0.84521484375, 0.04296875, 0.07177734375],
+	"health": [0.2509765625, 0.84521484375, 0.04296875, 0.07177734375],
+	"canay": [0.35693359375, 0.8251953125, 0.05908203125, 0.0517578125],
+	"canary": [0.47900390625, 0.8251953125, 0.05908203125, 0.0517578125],
+	"capsule": [0.60205078125, 0.822265625, 0.06005859375, 0.048828125],
+	"zap": [0.7158203125, 0.8232421875, 0.0498046875, 0.0498046875],
+	"mpickup": [0.8173828125, 0.82373046875, 0.0478515625, 0.05029296875],
+	"missile": [0.9140625, 0.7939453125, 0.044921875, 0.0205078125],
 }
 
 
@@ -148,6 +212,7 @@ const shaders = {
 	starfly: {},
 	nebula: {},
 	rock: {},
+	sprite: {},
 }
 
 // Stars during the main gameplay, moving across the screen.
@@ -237,22 +302,68 @@ attribute float r;
 attribute float T;
 attribute vec3 color;
 uniform vec2 screen;
-varying vec2 pT;
+varying vec2 pT0, pT1;
+varying float aT;
 varying vec3 tcolor;
 void main() {
 	vec2 p = (pU * r + center) / screen;
-	pT = -pU * 0.5 + 0.5;
+	pT0 = -pU * 0.5 + 0.5;
 	gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
-//	if (screen.x > screen.y) pT.xy = pT.yx;
+	if (screen.x > screen.y) pT0.xy = pT0.yx;
 	float a = mod(T * 60.0, 60.0);
+	aT = fract(a);
 	a = floor(a);
-	pT.x += mod(a, 8.0);
-	pT.y += floor(a / 8.0);
-	pT /= 8.0;
+	pT1 = pT0;
+	pT0.x += mod(a, 8.0);
+	pT0.y += floor(a / 8.0);
+	pT0 /= 8.0;
+	pT1.x += mod(a + 1.0, 8.0);
+	pT1.y += floor((a + 1.0) / 8.0);
+	pT1 /= 8.0;
 	tcolor = color;
 }
 `
 shaders.rock.frag = `
+precision highp float;
+uniform sampler2D texture;
+varying vec2 pT0, pT1;
+varying float aT;
+varying vec3 tcolor;
+void main() {
+	gl_FragColor = mix(texture2D(texture, pT0), texture2D(texture, pT1), aT);
+	gl_FragColor.rgb *= tcolor;
+}
+`
+
+shaders.sprite.vert = `
+attribute vec2 pU;
+attribute vec2 pos;
+attribute vec2 tcenter, tsize;
+attribute float scale;
+attribute float A;  // Clockwise rotation
+attribute vec3 color;
+uniform vec2 screen;
+varying vec2 pT;
+varying vec3 tcolor;
+mat2 R(float theta) {
+	float s = sin(theta), c = cos(theta);
+	return mat2(c, -s, s, c);
+}
+void main() {
+	pT = tcenter + tsize * pU;
+	// Transpose here because sprite sheet is laid out horizontally
+	// and we want vertical by default.
+	vec2 p = pos + R(A) * (scale * pU * tsize * 1024.0).yx;
+	if (screen.x > screen.y) {
+		p.xy = p.yx;
+		p.y = screen.y - p.y;
+	}
+	p /= screen;
+	gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+	tcolor = color;
+}
+`
+shaders.sprite.frag = `
 precision highp float;
 uniform sampler2D texture;
 varying vec2 pT;
@@ -262,6 +373,4 @@ void main() {
 	gl_FragColor.rgb *= tcolor;
 }
 `
-
-
 
