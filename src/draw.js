@@ -4,10 +4,31 @@
 // Dedicated textures:
 // 0: UFX.gltext
 // 1: nebula
+// 2: rocks
 
 "use strict"
+
 let gl, pUbuffer
+
+// Add the given values to the data array 6x, along with corresponding pU's.
+function addpU(data, vals) {
+	return data.concat(
+		[-1, -1], vals, [1, -1], vals, [1, 1], vals,
+		[-1, -1], vals, [1, 1], vals, [-1, 1], vals
+	)
+}
+function builddata(objs, fvals) {
+	let data = []
+	objs.forEach(obj => data = addpU(data, fvals(obj)))
+	data.nvert = 6 * objs.length
+	return data
+}
+
+
 let draw = {
+	load: function () {
+		UFX.resource.load({ rocks: "data/rocks.png" })
+	},
 	init: function () {
 		this.pixelratio = window.devicePixelRatio || 1
 		this.canvas = document.getElementById("canvas")
@@ -56,6 +77,12 @@ let draw = {
 		})
 		gl.activeTexture(gl.TEXTURE1)
 		gl.bindTexture(gl.TEXTURE_2D, this.nebulatexture)
+
+		this.rocktexture = gl.buildTexture({
+			source: UFX.resource.images.rocks,
+		})
+		gl.activeTexture(gl.TEXTURE2)
+		gl.bindTexture(gl.TEXTURE_2D, this.rocktexture)
 	},
 	clear: function () {
 		gl.clearColor(0, 0, 0, 1)
@@ -74,6 +101,24 @@ let draw = {
 			pU: 0,
 		})
 		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
+	},
+	rocks: function (rockdata) {
+		let data = builddata(rockdata, rock => [rock.x, rock.y, rock.r, rock.T, 1, 0, 0])
+		if (!data.length) return
+		gl.progs.rock.use()
+		gl.progs.rock.set({
+			screen: [this.wV, this.hV],
+			texture: 2,
+		})
+		gl.makeArrayBuffer(data).bind()
+		gl.progs.rock.assignAttribOffsets({
+			pU: 0,
+			center: 2,
+			r: 4,
+			T: 5,
+			color: 6,
+		})
+		gl.drawArrays(gl.TRIANGLES, 0, data.nvert)
 	},
 
 	_star: function (prog, sfactor, Tfactor) {
@@ -102,6 +147,7 @@ const shaders = {
 	startalk: {},
 	starfly: {},
 	nebula: {},
+	rock: {},
 }
 
 // Stars during the main gameplay, moving across the screen.
@@ -182,5 +228,40 @@ void main() {
 	gl_FragColor = vec4(a * color, 1.0);
 }
 `
+
+// Background nebula during the main gameplay
+shaders.rock.vert = `
+attribute vec2 pU;
+attribute vec2 center;
+attribute float r;
+attribute float T;
+attribute vec3 color;
+uniform vec2 screen;
+varying vec2 pT;
+varying vec3 tcolor;
+void main() {
+	vec2 p = (pU * r + center) / screen;
+	pT = -pU * 0.5 + 0.5;
+	gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+//	if (screen.x > screen.y) pT.xy = pT.yx;
+	float a = mod(T * 60.0, 60.0);
+	a = floor(a);
+	pT.x += mod(a, 8.0);
+	pT.y += floor(a / 8.0);
+	pT /= 8.0;
+	tcolor = color;
+}
+`
+shaders.rock.frag = `
+precision highp float;
+uniform sampler2D texture;
+varying vec2 pT;
+varying vec3 tcolor;
+void main() {
+	gl_FragColor = texture2D(texture, pT);
+	gl_FragColor.rgb *= tcolor;
+}
+`
+
 
 
