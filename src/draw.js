@@ -277,7 +277,7 @@ uniform float y0;
 varying float c;
 void main() {
 	vec2 pos = mod(star.xy - star.z * vec2(y0, T), 1.0) * 2.0 - 1.0;
-	if (screen.x > screen.y) pos.xy = pos.yx;
+	if (screen.x > screen.y) pos.xy = vec2(pos.y, -pos.x);
 	gl_Position = vec4(pos, 0.0, 1.0);
 	c = star.z / 15.0;
 }
@@ -327,8 +327,9 @@ void main() {
 	pT = pU * 0.05;
 	pT.y *= 16.0 / 9.0;
 	pT += vec2(y0, T);
-	gl_Position = vec4(pU, 0.0, 1.0);
-	if (screen.x > screen.y) pT.xy = pT.yx;
+	vec2 p = pU;
+	if (screen.x > screen.y) p = vec2(p.y, -p.x);
+	gl_Position = vec4(p, 0.0, 1.0);
 }
 `
 shaders.nebula.frag = `
@@ -439,11 +440,12 @@ void main() {
 shaders.bullet.vert = `
 attribute vec2 pU;  // Unit coordinates
 attribute vec2 pG0;  // Position in game coordinates
-attribute vec2 GscaleU;  // bullet radius
+attribute float GscaleU;  // bullet radius
 attribute vec3 color;
 uniform vec2 screensizeV;
 uniform float y0G;  // Game coordinate at the halfway point (vertical in landscape)
 varying vec3 tcolor;
+varying vec2 pT;
 const vec2 PscaleG = vec2(1.0 / 427.0, 1.0 / 240.0);
 void main() {
 	// Landscape mode by default
@@ -458,14 +460,16 @@ void main() {
 	}
 	gl_Position = vec4(pP, 0.0, 1.0);
 	tcolor = color;
+	pT = pU;
 }
 `
 shaders.bullet.frag = `
 precision highp float;
 varying vec3 tcolor;
+varying vec2 pT;
 void main() {
-	float alpha = float(length(gl_PointCoord - 0.5) < 0.5);
-	gl_FragColor = vec4(tcolor, 1.0);
+	float alpha = length(pT) < 1.0 ? 1.0 : 0.0;
+	gl_FragColor = vec4(tcolor, alpha);
 }
 `
 

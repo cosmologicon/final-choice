@@ -72,6 +72,63 @@ const LinearMotion = {
 	},
 }
 
+const Tumbles = {
+	init: function (omega) {
+		this.omega = omega
+	},
+	start: function () {
+		this.theta = 0
+	},
+	think: function (dt) {
+		this.theta += this.omega * dt
+	},
+}
+
+const YouBound = {
+	init: function (omega, R) {
+		this.omega = omega
+		this.R = R
+	},
+	think: function (dt) {
+		let theta = this.omega * this.t
+		this.x = state.you.x + this.R * Math.cos(theta)
+		this.y = state.you.y + this.R * Math.sin(theta)
+	},
+}
+
+const SeeksEnemies = {
+	init: function (v0) {
+		this.v0 = v0
+	},
+	think: function (dt) {
+		let target = null, r = 200
+		state.enemies.concat(state.bosses).forEach(e => {
+			if (e.hp <= 0) return
+			let d = Math.hypot(this.x - e.x, this.y - e.y)
+			if (d < r) {
+				target = e
+				r = d
+			}
+		})
+		let ax = 2000, ay = 0
+		if (target) {
+			;[ax, ay] = Math.norm([target.x - this.x, target.y - this.y], 2000)
+		}
+		;[this.vx, this.vy] = Math.norm([this.vx + dt * ax, this.vy + dt * ay], this.v0)
+	},
+}
+
+
+// HEALTH
+
+const InfiniteHealth = {
+	init: function () {
+		this.hp = 0
+	},
+	hurt: function () {
+	},
+}
+
 // COLLISION
 
 const Collides = {
@@ -133,6 +190,30 @@ const DrawGlow = {
 			x: this.x, y: this.y,
 			r: this.r,
 			color: [0.8, 0.8, 1],
+		}
+	},
+}
+
+const DrawAngleImage = {
+	init: function (imgname, imgscale) {
+		this.imgname = imgname
+		this.imgscale = imgscale || 1
+	},
+	start: function () {
+		this.iflash = 0
+	},
+	think: function (dt) {
+		this.iflash = Math.max(this.iflash - dt, 0)
+	},
+	spritedata: function () {
+		let scale = 0.01 * this.r * this.imgscale
+		let A = -this.theta
+		return {
+			imgname: this.imgname,
+			x: this.x, y: this.y,
+			scale: scale,
+			A: A,
+			// cfilter = getcfilter(self.iflash))
 		}
 	},
 }
@@ -253,7 +334,7 @@ const MissilesWithSpace = {
 	shootmissile: function () {
 		let dx = 0, dy = this.jmissile ? 1 : -1
 		let r = this.r + 5
-		state.goodbullets.push(new GoodMissile({
+		state.goodmissiles.push(new GoodMissile({
 			x: this.x + r * dx, y: this.y + r * dy,
 			vx: 1000 * dx, vy: 1000 * dy,
 		}))
@@ -270,7 +351,7 @@ const CShotsWithSpace = {
 		this.tcshot += dt
 	},
 	act: function () {
-		if (this.tcshot > this.cshottime) this.cshot()
+		if (this.tcshot > state.cshottime) this.cshot()
 	},
 	cshot: function () {
 		let r = this.r + 5
@@ -283,8 +364,8 @@ const CShotsWithSpace = {
 				r: 5,
 				damage: 5,
 			}))
-			this.tcshot = 0
 		}
+		this.tcshot = 0
 	},
 }
 
@@ -321,10 +402,10 @@ You.prototype = UFX.Thing()
 	.addcomp(MovesWithArrows)
 	.addcomp(Knockable)
 	.addcomp(FiresWithSpace)
-//	.addcomp(MissilesWithSpace)
-//	.addcomp(CShotsWithSpace)
+	.addcomp(MissilesWithSpace)
+	.addcomp(CShotsWithSpace)
 	.addcomp(Collides, 5)
-//	.addcomp(SpawnsCompanion)
+	.addcomp(SpawnsCompanion)
 	.addcomp(ConstrainToScreen, 5, 5)
 //	.addcomp(FlashesOnInvulnerable)
 	.addcomp(DrawFacingImage, "you", 5, 1000)
@@ -334,6 +415,19 @@ You.prototype = UFX.Thing()
 			state.takedamage(damage)
 		},
 	})
+
+function Companion(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+Companion.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(YouBound, 5, 25)
+	.addcomp(Lives)
+	.addcomp(Collides, 4)
+	.addcomp(InfiniteHealth)
+	.addcomp(Tumbles, 4)
+	.addcomp(DrawAngleImage, "zap", 4)
 
 function GoodBullet(obj) {
 	this.start()
@@ -350,4 +444,18 @@ GoodBullet.prototype = UFX.Thing()
 	.addcomp(DisappearsOffscreen)
 	.addcomp(DrawGlow)
 
+function GoodMissile(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+GoodMissile.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(Collides, 5)
+	.addcomp(SeeksEnemies, 300)
+	.addcomp(LinearMotion)
+	.addcomp(DiesOnCollision)
+	.addcomp(HurtsOnCollision)
+	.addcomp(DisappearsOffscreen)
+	.addcomp(DrawFacingImage, "missile", 5)
 

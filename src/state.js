@@ -30,6 +30,9 @@ let state = {
 	clear: function () {
 		this.yous = []
 		this.goodbullets = []
+		this.goodmissiles = []
+		this.enemies = []
+		this.bosses = []
 	},
 	restart: function () {
 		this.twin = 0
@@ -39,10 +42,10 @@ let state = {
 		this.xoffset = 0
 	},
 	think: function (dt) {
-		let objs = this.yous.concat(this.goodbullets)
+		let objs = this.yous.concat(this.goodbullets, this.goodmissiles, this.enemies, this.bosses)
 		objs.forEach(obj => obj.think(dt))
 
-		;"yous goodbullets".split(" ").forEach(gname => {
+		;"yous goodbullets goodmissiles enemies bosses".split(" ").forEach(gname => {
 			this[gname] = this[gname].filter(obj => obj.alive)
 		})
 
@@ -54,7 +57,7 @@ let state = {
 	},
 	
 	draw: function () {
-		let sprites = this.yous
+		let sprites = this.yous.concat(this.enemies, this.bosses, this.goodmissiles)
 		draw.sprites(sprites.map(sprite => sprite.spritedata()))
 		let bullets = this.goodbullets
 		draw.bullets(bullets.map(bullet => bullet.objdata()))
