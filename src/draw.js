@@ -123,6 +123,7 @@ let draw = {
 			T: Date.now() / 100000 % 1,
 			color1: color1,
 			color2: color2,
+			y0: 0.00015 * state.y0,
 		})
 		pUbuffer.bind()
 		gl.progs.nebula.assignAttribOffsets({
@@ -135,6 +136,7 @@ let draw = {
 		prog.set({
 			screen: [this.wV, this.hV],
 			T: Date.now() / (Tfactor * 1000) % 1,
+			y0: 0.00025 * state.y0,
 		})
 		this.starbuffer.bind()
 		prog.assignAttribOffsets({
@@ -175,7 +177,6 @@ let draw = {
 		})
 		if (!data.length) return
 		gl.progs.sprite.use()
-		console.log(state.y0)
 		gl.progs.sprite.set({
 			screensizeV: [this.wV, this.hV],
 			texture: 3,
@@ -252,9 +253,10 @@ shaders.starfly.vert = `
 attribute vec3 star;
 uniform float T;   // Range [0, 1)
 uniform vec2 screen;  // screen size in pixels
+uniform float y0;
 varying float c;
 void main() {
-	vec2 pos = vec2(star.x, mod(star.y - star.z * T, 1.0)) * 2.0 - 1.0;
+	vec2 pos = mod(star.xy - star.z * vec2(y0, T), 1.0) * 2.0 - 1.0;
 	if (screen.x > screen.y) pos.xy = pos.yx;
 	gl_Position = vec4(pos, 0.0, 1.0);
 	c = star.z / 15.0;
@@ -299,11 +301,12 @@ shaders.nebula.vert = `
 attribute vec2 pU;
 uniform vec2 screen;
 uniform float T;
+uniform float y0;
 varying vec2 pT;
 void main() {
 	pT = pU * 0.05;
 	pT.y *= 16.0 / 9.0;
-	pT.y += T;
+	pT += vec2(y0, T);
 	gl_Position = vec4(pU, 0.0, 1.0);
 	if (screen.x > screen.y) pT.xy = pT.yx;
 }

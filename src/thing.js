@@ -82,9 +82,8 @@ const DrawFacingImage = {
 	},
 	spritedata: function () {
 		let scale = 0.01 * this.r * this.imgscale
-		let x = this.vx + this.ispeed, y = -this.vy
+		let x = this.vx + this.ispeed, y = this.vy
 		let angle = (x == 0 && y == 0) ? 0 : Math.atan2(y, x)
-		console.log(this.vx, this.vy, x, y, angle)
 		return {
 			imgname: this.imgname,
 			x: this.x, y: this.y,
