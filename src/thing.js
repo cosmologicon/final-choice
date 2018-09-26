@@ -181,6 +181,29 @@ const Knockable = {
 	},
 }
 
+const Visitable = {
+	init: function (help) {
+		this.help = help
+	},
+	visit: function () {
+		if (!this.alive) return
+		state.met[this.name] = true
+		UFX.scene.push("visit", this.name)
+		this.alive = false
+	},
+	drawtext: function () {
+		if (!this.help) return
+		if (state.met[this.name]) return
+		let alpha = Math.clamp(Math.abs(this.t % 2 - 1) * 7, 0, 1)
+		let pos = draw.screenpos([this.x + this.r, this.y - 2 * this.r])
+		UFX.gltext("HELP!", {
+			center: pos,
+			fontsize: Math.ceil(20 * draw.f),
+			fontname: "Bungee",
+			alpha: alpha,
+		})
+	},
+}
 
 // DISPLAY
 
@@ -458,4 +481,18 @@ GoodMissile.prototype = UFX.Thing()
 	.addcomp(HurtsOnCollision)
 	.addcomp(DisappearsOffscreen)
 	.addcomp(DrawFacingImage, "missile", 5)
+
+function Capsule(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+Capsule.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(Collides, 16)
+	.addcomp(LinearMotion)
+	.addcomp(InfiniteHealth)
+	.addcomp(Tumbles, 1)
+	.addcomp(DrawAngleImage, "capsule", 1.7)
+	.addcomp(Visitable, true)
 

@@ -10,6 +10,9 @@ UFX.scenes.play = {
 		state.you = new You({ x: -300, y: 0 })
 		state.yous.push(state.you)
 //		makewaves()
+
+
+		state.planets.push(new Capsule({ name: "1", x: 0, y: 0, vx: -20, vy: 0, }))
 	},
 	think: function (dt) {
 		// sound.mplay(2)

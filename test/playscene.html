@@ -15,6 +15,7 @@
 <script src="src/setup.js"></script>
 <script src="src/state.js"></script>
 <script src="src/playscene.js"></script>
+<script src="src/visitscene.js"></script>
 <script src="src/thing.js"></script>
 <script src="src/settings.js"></script>
 <script src="src/draw.js"></script>
@@ -28,7 +29,12 @@ window.onerror = function (error, url, line) {
 let sound = {
 	playsfx: () => {},
 }
-settings.portrait = false
+UFX.scenes.visit = {
+	think: function (dt) {
+		UFX.scene.pop()
+	},
+}
+settings.portrait = true
 draw.load()
 UFX.resource.onload = () => {
 	draw.init()

@@ -1,5 +1,9 @@
 "use strict"
 
+function collided(obj1, obj2) {
+	return Math.hypot(obj1.x - obj2.x, obj1.y - obj2.y) < obj1.r + obj2.r
+}
+
 let state = {
 
 	speed: 200,
@@ -21,16 +25,21 @@ let state = {
 	scrollspeed: 40,
 	yrange: 320,
 
+	
+
 	init: function () {
 		this.you = null
 		this.clear()
 		this.restart()
 		this.y0 = 0
+		
+		this.met = {}
 	},
 	clear: function () {
 		this.yous = []
 		this.goodbullets = []
 		this.goodmissiles = []
+		this.planets = []
 		this.enemies = []
 		this.bosses = []
 	},
@@ -42,11 +51,15 @@ let state = {
 		this.xoffset = 0
 	},
 	think: function (dt) {
-		let objs = this.yous.concat(this.goodbullets, this.goodmissiles, this.enemies, this.bosses)
+		let objs = this.yous.concat(this.goodbullets, this.goodmissiles, this.planets, this.enemies, this.bosses)
 		objs.forEach(obj => obj.think(dt))
 
-		;"yous goodbullets goodmissiles enemies bosses".split(" ").forEach(gname => {
+		;"yous goodbullets goodmissiles enemies bosses planets".split(" ").forEach(gname => {
 			this[gname] = this[gname].filter(obj => obj.alive)
+		})
+
+		this.planets.forEach(obj => {
+			if (collided(obj, this.you)) obj.visit()
 		})
 
 		let ymax = this.yrange - this.you.r
@@ -57,11 +70,13 @@ let state = {
 	},
 	
 	draw: function () {
-		let sprites = this.yous.concat(this.enemies, this.bosses, this.goodmissiles)
+		let sprites = this.yous.concat(this.enemies, this.bosses, this.goodmissiles, this.planets)
 		draw.sprites(sprites.map(sprite => sprite.spritedata()))
 		let bullets = this.goodbullets
 		draw.bullets(bullets.map(bullet => bullet.objdata()))
+		
+		gl.progs.text.use()
+		this.planets.forEach(planet => planet.drawtext())
 	},
 }
 state.init()
-

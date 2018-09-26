@@ -60,7 +60,7 @@ let draw = {
 			this.sV = Math.sqrt(this.wV * this.hV)
 			gl.viewport(0, 0, this.wV, this.hV)
 			this.aspect = aspect
-			this.f = this.sV / (854 * 480)
+			this.f = this.sV / Math.sqrt(854 * 480)
 		}
 		UFX.maximize(canvas, { aspects: [settings.portrait ? 9/16 : 16/9], fillcolor: "#111" })
 		gl.disable(gl.DEPTH_TEST)
@@ -101,6 +101,11 @@ let draw = {
 		gl.activeTexture(gl.TEXTURE3)
 		gl.bindTexture(gl.TEXTURE_2D, this.spritetexture)
 	},
+	screenpos: function (pG) {
+		let [xG, yG] = pG
+		let xV = this.f * (xG + 427), yV = this.f * (240 - (yG - state.y0))
+		return settings.portrait ? [this.wV - yV, xV] : [xV, yV]
+	},
 	clear: function () {
 		gl.clearColor(0, 0, 0, 1)
 		gl.clear(gl.COLOR_BUFFER_BIT)
@@ -118,12 +123,15 @@ let draw = {
 	},
 	nebula: function (color1, color2) {
 		gl.progs.nebula.use()
+		gl.activeTexture(gl.TEXTURE1)
+		gl.bindTexture(gl.TEXTURE_2D, this.nebulatexture)
 		gl.progs.nebula.set({
 			screen: [this.wV, this.hV],
 			T: Date.now() / 100000 % 1,
 			color1: color1,
 			color2: color2,
 			y0: 0.00015 * state.y0,
+			texture: 1,
 		})
 		pUbuffer.bind()
 		gl.progs.nebula.assignAttribOffsets({
@@ -350,7 +358,6 @@ void main() {
 }
 `
 
-// Background nebula during the main gameplay
 shaders.rock.vert = `
 attribute vec2 pU;
 attribute vec2 center;
