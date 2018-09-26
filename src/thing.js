@@ -14,13 +14,84 @@ const Lives = {
 	},
 }
 
-// WORLD INTERACTION
+const Lifetime = {
+	init: function (lifetime) {
+		this.lifetime = lifetime === undefined ? 1 : lifetime
+	},
+	start: function () {
+		this.f = 0
+	},
+	think: function (dt) {
+		this.f = this.lifetime <= 0 ? 1 : Math.clamp(this.t / this.lifetime, 0, 1)
+		if (this.f >= 1) this.alive = false
+	},
+}
+
+// WORLD INTERACTION AND MOTION
 
 const WorldBound = {}  // members: x, y
+
+const ConstrainToScreen = {
+	init: function (xmargin, ymargin) {
+		this.xmargin = xmargin || 0
+		this.ymargin = ymargin || 0
+	},
+	think: function (dt) {
+		if (state.twin) return
+		let dxmax = 427 - this.r - this.xmargin
+		this.x = Math.clamp(this.x, -dxmax, dxmax)
+		let dymax = state.yrange - this.r - this.ymargin
+		this.y = Math.clamp(this.y, -dymax, dymax)
+	},
+}
+
+const DisappearsOffscreen = {
+	init: function (offscreenmargin) {
+		this.offscreenmargin = offscreenmargin === undefined ? 20 : offscreenmargin
+	},
+	think: function (dt) {
+		let xmax = 427 + this.r + this.offscreenmargin
+		let ymax = state.yrange + this.r + this.offscreenmargin
+		if (this.x * this.vx > 0 && Math.abs(this.x) > xmax) {
+			this.alive = false
+		}
+		if (this.y * this.vy > 0 && Math.abs(this.y) > ymax) {
+			this.alive = false
+		}
+	},
+}
+
+const LinearMotion = {
+	start: function () {
+		this.vx = 0
+		this.vy = 0
+	},
+	think: function (dt) {
+		this.x += dt * this.vx
+		this.y += dt * this.vy
+	},
+}
+
+// COLLISION
 
 const Collides = {
 	init: function (r) {
 		this.r = r
+	},
+}
+
+const DiesOnCollision = {
+	hit: function () {
+		this.die()
+	},
+}
+
+const HurtsOnCollision = {
+	init: function (damage) {
+		this.damage = damage === undefined ? 1 : damage
+	},
+	hit: function (target) {
+		if (target) target.hurt(this.damage)
 	},
 }
 
@@ -53,22 +124,18 @@ const Knockable = {
 	},
 }
 
-const ConstrainToScreen = {
-	init: function (xmargin, ymargin) {
-		this.xmargin = xmargin || 0
-		this.ymargin = ymargin || 0
-	},
-	think: function (dt) {
-		if (state.twin) return
-		let dxmax = 427 - this.r - this.xmargin
-		this.x = Math.clamp(this.x, -dxmax, dxmax)
-		let dymax = state.yrange - this.r - this.ymargin
-		this.y = Math.clamp(this.y, -dymax, dymax)
-	},
-}
-
 
 // DISPLAY
+
+const DrawGlow = {
+	objdata: function () {
+		return {
+			x: this.x, y: this.y,
+			r: this.r,
+			color: [0.8, 0.8, 1],
+		}
+	},
+}
 
 const DrawFacingImage = {
 	init: function (imgname, imgscale, ispeed) {
@@ -126,7 +193,7 @@ const FiresWithSpace = {
 		if (this.tshot > state.reloadtime) this.shoot()
 	},
 	getcharge: function () {
-		let t = this.tshot - statereloadtime
+		let t = this.tshot - state.reloadtime
 		if (t <= 0 || state.chargetime > 100000) return 0
 		if (t >= state.chargetime) return state.maxcharge
 		return t / state.chargetime * state.maxcharge
@@ -151,9 +218,9 @@ const FiresWithSpace = {
 		for (let jvshot = 0 ; jvshot < state.vshots ; ++jvshot) {
 			let dx = -6 * (jvshot + 1)
 			let dy = 8 * (jvshot + 1)
-			state.goodbullets.append(new RangeGoodBullet({
+			state.goodbullets.push(new GoodBullet({
 				x: x0 + dx, y: y0 + dy, vx: 500, vy: 0, r: 3, damage: 1, lifetime: 0.2, }))
-			state.goodbullets.append(new RangeGoodBullet({
+			state.goodbullets.push(new GoodBullet({
 				x: x0 + dx, y: y0 - dy, vx: 500, vy: 0, r: 3, damage: 1, lifetime: 0.2, }))
 		}
 		sound.playsfx("shot")
@@ -267,4 +334,20 @@ You.prototype = UFX.Thing()
 			state.takedamage(damage)
 		},
 	})
+
+function GoodBullet(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+GoodBullet.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(Lifetime, 100)
+	.addcomp(Collides, 3)
+	.addcomp(LinearMotion)
+	.addcomp(DiesOnCollision)
+	.addcomp(HurtsOnCollision)
+	.addcomp(DisappearsOffscreen)
+	.addcomp(DrawGlow)
+
 

@@ -194,6 +194,25 @@ let draw = {
 		})
 		gl.drawArrays(gl.TRIANGLES, 0, data.nvert)
 	},
+	bullets: function (bdata) {
+		let data = builddata(bdata, bullet => {
+			return [bullet.x, bullet.y, bullet.r].concat(bullet.color)
+		})
+		if (!data.length) return
+		gl.progs.bullet.use()
+		gl.progs.bullet.set({
+			screensizeV: [this.wV, this.hV],
+			y0G: state.y0,
+		})
+		gl.makeArrayBuffer(data).bind()
+		gl.progs.bullet.assignAttribOffsets({
+			pU: 0,
+			pG0: 2,
+			GscaleU: 4,
+			color: 5,
+		})
+		gl.drawArrays(gl.TRIANGLES, 0, data.nvert)
+	},
 }
 
 // Position and size of the sprite within the texture sheet
@@ -232,6 +251,7 @@ const shaders = {
 	nebula: {},
 	rock: {},
 	sprite: {},
+	bullet: {},
 }
 
 shaders.fill.vert = `
@@ -370,9 +390,6 @@ void main() {
 }
 `
 
-//			let dx = sprite.x, dy = sprite.y - state.y0
-//			return [dy + 240, 427 - dx, tx, ty, tw, th, sprite.scale, sprite.A, 1, 1, 1]
-
 shaders.sprite.vert = `
 attribute vec2 pU;  // Unit coordinates
 attribute vec2 pG0;  // Position in game coordinates
@@ -418,4 +435,38 @@ void main() {
 	gl_FragColor.rgb *= tcolor;
 }
 `
+
+shaders.bullet.vert = `
+attribute vec2 pU;  // Unit coordinates
+attribute vec2 pG0;  // Position in game coordinates
+attribute vec2 GscaleU;  // bullet radius
+attribute vec3 color;
+uniform vec2 screensizeV;
+uniform float y0G;  // Game coordinate at the halfway point (vertical in landscape)
+varying vec3 tcolor;
+const vec2 PscaleG = vec2(1.0 / 427.0, 1.0 / 240.0);
+void main() {
+	// Landscape mode by default
+	vec2 pG = pG0 + GscaleU * pU;
+	// This combines two transforms. First apply the y0 offset. Second, account for the fact that
+	// +yG is down while +yP is up.
+	pG.y = y0G - pG.y;
+	vec2 pP = PscaleG * pG;
+	// Transform to portrait mode
+	if (screensizeV.y > screensizeV.x) {
+		pP = vec2(-pP.y, pP.x);
+	}
+	gl_Position = vec4(pP, 0.0, 1.0);
+	tcolor = color;
+}
+`
+shaders.bullet.frag = `
+precision highp float;
+varying vec3 tcolor;
+void main() {
+	float alpha = float(length(gl_PointCoord - 0.5) < 0.5);
+	gl_FragColor = vec4(tcolor, 1.0);
+}
+`
+
 

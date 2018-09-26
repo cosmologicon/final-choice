@@ -25,6 +25,9 @@
 window.onerror = function (error, url, line) {
 	document.body.innerHTML = "<p>Error in: "+url+"<p>line "+line+"<pre>"+error+"</pre>"
 }
+let sound = {
+	playsfx: () => {},
+}
 draw.load()
 UFX.resource.onload = () => {
 	draw.init()

@@ -39,8 +39,12 @@ let state = {
 		this.xoffset = 0
 	},
 	think: function (dt) {
-		let objs = this.yous
+		let objs = this.yous.concat(this.goodbullets)
 		objs.forEach(obj => obj.think(dt))
+
+		;"yous goodbullets".split(" ").forEach(gname => {
+			this[gname] = this[gname].filter(obj => obj.alive)
+		})
 
 		let ymax = this.yrange - this.you.r
 		let y0max = this.yrange - 240
@@ -52,6 +56,8 @@ let state = {
 	draw: function () {
 		let sprites = this.yous
 		draw.sprites(sprites.map(sprite => sprite.spritedata()))
+		let bullets = this.goodbullets
+		draw.bullets(bullets.map(bullet => bullet.objdata()))
 	},
 }
 state.init()
