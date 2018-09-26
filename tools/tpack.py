@@ -3,12 +3,19 @@
 
 import pygame, glob
 
+
 def imgs():
 	for imgname in glob.glob("../../pyjam/final-choice/data/img/*.png"):
 		iname = imgname.split("/")[-1][:-4]
 		# if "rift" in iname: continue
 		img = pygame.image.load(imgname).convert_alpha()
 		yield iname, img
+	Rsurf = pygame.Surface((64, 128)).convert_alpha()
+	Rsurf.fill((0, 0, 255, 100))
+	font = pygame.font.Font(None, 80)
+	fsurf = font.render("R", True, (255, 255, 0), None)
+	Rsurf.blit(fsurf, fsurf.get_rect(center = Rsurf.get_rect().center))
+	yield "R", pygame.transform.rotate(Rsurf, -90)
 
 pygame.init()
 pygame.display.set_mode((200, 200))

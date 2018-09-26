@@ -9,6 +9,9 @@
 <script src="../UFX/src/resource.js"></script>
 <script src="../UFX/src/random.js"></script>
 <script src="../UFX/src/ticker.js"></script>
+<script src="../UFX/src/key.js"></script>
+<script src="src/settings.js"></script>
+<script src="src/state.js"></script>
 <script src="src/draw.js"></script>
 <body>
 <canvas id="canvas"></canvas>
@@ -18,12 +21,16 @@ window.onerror = function (error, url, line) {
 	document.body.innerHTML = "<p>Error in: "+url+"<p>line "+line+"<pre>"+error+"</pre>"
 }
 draw.load()
-draw.portrait = true
+settings.portrait = false
 let spritedata = [
-	{ imgname: "you", x: 300, y: 300, scale: 1, A: 0, },
-	{ imgname: "you", x: 300, y: 500, scale: 0.5, A: 0.6, },
+	{ imgname: "you", x: -300, y: 0, scale: 1, A: 0, },
+	{ imgname: "you", x: 300, y: 0, scale: 0.5, A: 0.6, },
+	{ imgname: "R", x: 0, y: -100, scale: 1, A: 0.1, },
+	{ imgname: "R", x: 0, y: 100, scale: 1, A: 0, },
+	{ imgname: "R", x: 128, y: 100, scale: 1, A: 0, },
 ]
 function think(dt) {
+	state.y0 = 100
 	draw.clear()
 	draw.sprites(spritedata)
 }

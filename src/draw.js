@@ -172,40 +172,36 @@ let draw = {
 		let data = builddata(sdata, sprite => {
 			let [tx, ty, tw, th] = Tdata[sprite.imgname]
 			return [sprite.x, sprite.y, tx, ty, tw, th, sprite.scale, sprite.A, 1, 1, 1]
-
-//			let dx = sprite.x, dy = sprite.y - state.y0
-//			return [dy + 240, 427 - dx, tx, ty, tw, th, sprite.scale, sprite.A, 1, 1, 1]
 		})
 		if (!data.length) return
 		gl.progs.sprite.use()
+		console.log(state.y0)
 		gl.progs.sprite.set({
-			screen: [this.wV, this.hV],
+			screensizeV: [this.wV, this.hV],
 			texture: 3,
-			y0: state.y0,
+			y0G: state.y0,
 		})
 		gl.makeArrayBuffer(data).bind()
 		gl.progs.sprite.assignAttribOffsets({
 			pU: 0,
-			pos: 2,
-			tcenter: 4,
-			tsize: 6,
+			pG0: 2,
+			pT0: 4,
+			TscaleU: 6,
 			scale: 8,
 			A: 9,
 			color: 10,
 		})
 		gl.drawArrays(gl.TRIANGLES, 0, data.nvert)
 	},
-
-
 }
 
 // Position and size of the sprite within the texture sheet
 const Tdata = {
 	"rift-1": [0.146484375, 0.146484375, 0.146484375, 0.146484375],
-	"rift-3": [0.443359375, 0.146484375, 0.146484375, 0.146484375],
-	"rift-2": [0.740234375, 0.146484375, 0.146484375, 0.146484375],
+	"rift-2": [0.443359375, 0.146484375, 0.146484375, 0.146484375],
+	"rift-0": [0.740234375, 0.146484375, 0.146484375, 0.146484375],
 	"health0": [0.93359375, 0.07177734375, 0.04296875, 0.07177734375],
-	"rift-0": [0.146484375, 0.443359375, 0.146484375, 0.146484375],
+	"rift-3": [0.146484375, 0.443359375, 0.146484375, 0.146484375],
 	"hawk": [0.40087890625, 0.40087890625, 0.10400390625, 0.10400390625],
 	"you": [0.64306640625, 0.37451171875, 0.13427734375, 0.07763671875],
 	"gabriel": [0.88037109375, 0.38623046875, 0.09912109375, 0.08935546875],
@@ -218,12 +214,13 @@ const Tdata = {
 	"duck": [0.05712890625, 0.83837890625, 0.05712890625, 0.06494140625],
 	"shield": [0.1611328125, 0.84521484375, 0.04296875, 0.07177734375],
 	"health": [0.2509765625, 0.84521484375, 0.04296875, 0.07177734375],
-	"canay": [0.35693359375, 0.8251953125, 0.05908203125, 0.0517578125],
-	"canary": [0.47900390625, 0.8251953125, 0.05908203125, 0.0517578125],
+	"canary": [0.35693359375, 0.8251953125, 0.05908203125, 0.0517578125],
+	"canay": [0.47900390625, 0.8251953125, 0.05908203125, 0.0517578125],
 	"capsule": [0.60205078125, 0.822265625, 0.06005859375, 0.048828125],
 	"zap": [0.7158203125, 0.8232421875, 0.0498046875, 0.0498046875],
 	"mpickup": [0.8173828125, 0.82373046875, 0.0478515625, 0.05029296875],
-	"missile": [0.9140625, 0.7939453125, 0.044921875, 0.0205078125],
+	"R": [0.931640625, 0.8046875, 0.0625, 0.03125],
+	"missile": [0.044921875, 0.94140625, 0.044921875, 0.0205078125],
 }
 
 
@@ -374,33 +371,37 @@ void main() {
 //			return [dy + 240, 427 - dx, tx, ty, tw, th, sprite.scale, sprite.A, 1, 1, 1]
 
 shaders.sprite.vert = `
-attribute vec2 pU;
-attribute vec2 pos;
-attribute vec2 tcenter, tsize;
-attribute float scale;
+attribute vec2 pU;  // Unit coordinates
+attribute vec2 pG0;  // Position in game coordinates
+attribute vec2 pT0, TscaleU;   // Center and offset of texture coordinates
+attribute float scale;   // Unitless scale of sprite on screen
 attribute float A;  // Clockwise rotation
 attribute vec3 color;
-uniform vec2 screen;
-uniform float y0;
+uniform vec2 screensizeV;
+uniform float y0G;  // Game coordinate at the halfway point (vertical in landscape)
 varying vec2 pT;
 varying vec3 tcolor;
 mat2 R(float theta) {
 	float s = sin(theta), c = cos(theta);
-	return mat2(c, -s, s, c);
+	return mat2(c, s, -s, c);
 }
 
-const mat2 Rp = mat2(0.0, 1.0, -1.0, 0.0);
+const vec2 PscaleG = vec2(1.0 / 427.0, 1.0 / 240.0);
+const float GscaleT = 1024.0;
+
 void main() {
-	pT = tcenter + tsize * pU;
-	// Transpose here because sprite sheet is laid out horizontally
-	// and we want vertical by default.
-	vec2 p = pos + R(A) * (scale * pU * tsize * 1024.0).yx;
-	if (screen.x > screen.y) {
-		p.xy = p.yx;
-		p.y = screen.y - p.y;
+	pT = pT0 + TscaleU * pU;
+	// Landscape mode by default
+	vec2 pG = pG0 + R(A) * (scale * GscaleT * TscaleU * pU);
+	// This combines two transforms. First apply the y0 offset. Second, account for the fact that
+	// +yG is down while +yP is up.
+	pG.y = y0G - pG.y;
+	vec2 pP = PscaleG * pG;
+	// Transform to portrait mode
+	if (screensizeV.y > screensizeV.x) {
+		pP = vec2(-pP.y, pP.x);
 	}
-	p /= screen;
-	gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+	gl_Position = vec4(pP, 0.0, 1.0);
 	tcolor = color;
 }
 `
