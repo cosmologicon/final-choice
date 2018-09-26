@@ -1,5 +1,10 @@
 // Shaders
 
+// Coordinate convention:
+// In portrait mode: +x is up, +y is right
+// In landscape mode: +x is right, +y is down
+// angle > 0 is clockwise
+
 
 // Dedicated textures:
 // 0: UFX.gltext
@@ -32,7 +37,6 @@ let draw = {
 			rocks: "data/rocks.png",
 			sprites: "data/sprites.png",
 		})
-		this.portrait = true
 	},
 	init: function () {
 		this.pixelratio = window.devicePixelRatio || 1
@@ -56,8 +60,9 @@ let draw = {
 			this.sV = Math.sqrt(this.wV * this.hV)
 			gl.viewport(0, 0, this.wV, this.hV)
 			this.aspect = aspect
+			this.f = this.sV / (854 * 480)
 		}
-		UFX.maximize(canvas, { aspects: [this.portrait ? 9/16 : 16/9], fillcolor: "#111" })
+		UFX.maximize(canvas, { aspects: [settings.portrait ? 9/16 : 16/9], fillcolor: "#111" })
 		gl.disable(gl.DEPTH_TEST)
 		gl.enable(gl.BLEND)
 		gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, 0, 1)
@@ -99,6 +104,17 @@ let draw = {
 	clear: function () {
 		gl.clearColor(0, 0, 0, 1)
 		gl.clear(gl.COLOR_BUFFER_BIT)
+	},
+	fill: function (color) {
+		gl.progs.fill.use()
+		gl.progs.fill.set({
+			color: color,
+		})
+		pUbuffer.bind()
+		gl.progs.fill.assignAttribOffsets({
+			pU: 0,
+		})
+		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
 	},
 	nebula: function (color1, color2) {
 		gl.progs.nebula.use()
@@ -156,12 +172,16 @@ let draw = {
 		let data = builddata(sdata, sprite => {
 			let [tx, ty, tw, th] = Tdata[sprite.imgname]
 			return [sprite.x, sprite.y, tx, ty, tw, th, sprite.scale, sprite.A, 1, 1, 1]
+
+//			let dx = sprite.x, dy = sprite.y - state.y0
+//			return [dy + 240, 427 - dx, tx, ty, tw, th, sprite.scale, sprite.A, 1, 1, 1]
 		})
 		if (!data.length) return
 		gl.progs.sprite.use()
 		gl.progs.sprite.set({
 			screen: [this.wV, this.hV],
 			texture: 3,
+			y0: state.y0,
 		})
 		gl.makeArrayBuffer(data).bind()
 		gl.progs.sprite.assignAttribOffsets({
@@ -208,12 +228,27 @@ const Tdata = {
 
 
 const shaders = {
+	fill: {},
 	startalk: {},
 	starfly: {},
 	nebula: {},
 	rock: {},
 	sprite: {},
 }
+
+shaders.fill.vert = `
+attribute vec2 pU;
+void main() {
+	gl_Position = vec4(pU, 0.0, 1.0);
+}
+`
+shaders.fill.frag = `
+precision highp float;
+uniform vec4 color;
+void main() {
+	gl_FragColor = color;
+}
+`
 
 // Stars during the main gameplay, moving across the screen.
 shaders.starfly.vert = `
@@ -335,6 +370,9 @@ void main() {
 }
 `
 
+//			let dx = sprite.x, dy = sprite.y - state.y0
+//			return [dy + 240, 427 - dx, tx, ty, tw, th, sprite.scale, sprite.A, 1, 1, 1]
+
 shaders.sprite.vert = `
 attribute vec2 pU;
 attribute vec2 pos;
@@ -343,12 +381,15 @@ attribute float scale;
 attribute float A;  // Clockwise rotation
 attribute vec3 color;
 uniform vec2 screen;
+uniform float y0;
 varying vec2 pT;
 varying vec3 tcolor;
 mat2 R(float theta) {
 	float s = sin(theta), c = cos(theta);
 	return mat2(c, -s, s, c);
 }
+
+const mat2 Rp = mat2(0.0, 1.0, -1.0, 0.0);
 void main() {
 	pT = tcenter + tsize * pU;
 	// Transpose here because sprite sheet is laid out horizontally
