@@ -30,13 +30,27 @@ function builddata(objs, fvals) {
 	return data
 }
 
-
+function T(x) {
+	if (arguments.length > 1) {
+		return Array.from(arguments).map(arg => T(arg))
+	}
+	if (x.length > 1) {
+		return x.map(arg => T(arg))
+	}
+	return x > 0 ? Math.ceil(draw.f * x) : Math.floor(draw.f * x)
+}
+function yswap(a) {
+	if (a.length == 2) return [a[0], draw.hV - a[1]]
+	return [a[0], draw.hV - a[1] - a[3], a[2], a[3]]
+}
 let draw = {
 	load: function () {
 		UFX.resource.load({
 			rocks: "data/rocks.png",
 			sprites: "data/sprites.png",
 		})
+		UFX.resource.loadwebfonts("Bungee", "Fjalla One", "Lalezar", "Londrina Solid", "Passion One", "Permanent Marker")
+		UFX.gltext.DEFAULT.lineheight = 1.2
 	},
 	init: function () {
 		this.pixelratio = window.devicePixelRatio || 1
@@ -110,7 +124,12 @@ let draw = {
 		gl.clearColor(0, 0, 0, 1)
 		gl.clear(gl.COLOR_BUFFER_BIT)
 	},
-	fill: function (color) {
+	fill: function (color, crop) {
+		if (color.length == 3) color = color.concat([1])
+		if (crop) {
+			gl.scissor.apply(gl, crop)
+			gl.enable(gl.SCISSOR_TEST)
+		}
 		gl.progs.fill.use()
 		gl.progs.fill.set({
 			color: color,
@@ -120,6 +139,7 @@ let draw = {
 			pU: 0,
 		})
 		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
+		if (crop) gl.disable(gl.SCISSOR_TEST)
 	},
 	nebula: function (color1, color2) {
 		gl.progs.nebula.use()
@@ -144,8 +164,8 @@ let draw = {
 		prog.set({
 			screen: [this.wV, this.hV],
 			T: Date.now() / (Tfactor * 1000) % 1,
-			y0: 0.00025 * state.y0,
 		})
+		if (prog.set.y0) prog.set.y0(0.00025 * state.y0)
 		this.starbuffer.bind()
 		prog.assignAttribOffsets({
 			star: 0,

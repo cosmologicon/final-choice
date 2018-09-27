@@ -6,8 +6,12 @@
 <script src="../UFX/src/gl.js"></script>
 <script src="../UFX/src/gltext.js"></script>
 <script src="../UFX/src/maximize.js"></script>
+<script src="../UFX/src/key.js"></script>
+<script src="../UFX/src/resource.js"></script>
 <script src="../UFX/src/random.js"></script>
 <script src="../UFX/src/ticker.js"></script>
+<script src="src/settings.js"></script>
+<script src="src/state.js"></script>
 <script src="src/draw.js"></script>
 <body>
 <canvas id="canvas"></canvas>
@@ -18,10 +22,10 @@ window.onerror = function (error, url, line) {
 }
 draw.init()
 function think(dt) {
-//	draw.clear()
-	draw.nebula([0, 0, 0.3], [0.3, 0, 0.1])
-//	draw.startalk()
-	draw.starfly()
+	draw.clear()
+//	draw.nebula([0, 0, 0.3], [0.3, 0, 0.1])
+	draw.startalk()
+//	draw.starfly()
 }
 UFX.ticker.init(think)
 </script>

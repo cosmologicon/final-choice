@@ -87,7 +87,7 @@ let state = {
 		let objs = this.yous.concat(this.goodbullets, this.goodmissiles, this.pickups, this.planets, this.enemies, this.bosses)
 		objs.forEach(obj => obj.think(dt))
 
-		;"yous goodbullets goodmissiles enemies bosses planets".split(" ").forEach(gname => {
+		;"yous goodbullets goodmissiles pickups enemies bosses planets".split(" ").forEach(gname => {
 			this[gname] = this[gname].filter(obj => obj.alive)
 		})
 
@@ -127,9 +127,7 @@ let state = {
 		if (old < this.apickup0 && this.apickup0 <= this.apickup) {
 			this.spawnpickup(who, HealthPickup)
 		}
-		while (this.apickup >= this.apickup0) {
-			this.apickup -= this.apickup0
-		}
+		this.apickup %= this.apickup0
 	},
 	spawnpickup: function (who, PType) {
 		this.pickups.push(new PType({
