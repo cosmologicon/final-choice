@@ -1,6 +1,7 @@
 "use strict"
 
 Math.tau = 2 * Math.PI
+Math.phi = (1 + Math.sqrt(5)) / 2
 Math.norm = function (v, r) {
 	if (r === undefined) r = 1
 	let a = Math.hypot.apply(Math, v)

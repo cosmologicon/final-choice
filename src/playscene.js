@@ -13,6 +13,12 @@ UFX.scenes.play = {
 
 
 		state.planets.push(new Capsule({ name: "1", x: 0, y: 0, vx: -20, vy: 0, }))
+		state.addduckwave(700, 500, 4, 4, [
+			[0, 350, 100],
+			[4, 200, -200],
+			[8, 0, 100],
+			[12, -600, 200],
+		])
 	},
 	think: function (dt) {
 		// sound.mplay(2)

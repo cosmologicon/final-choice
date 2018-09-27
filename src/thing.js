@@ -72,6 +72,17 @@ const LinearMotion = {
 	},
 }
 
+const Accelerates = {
+	start: function () {
+		this.ax = 0
+		this.ay = 0
+	},
+	think: function (dt) {
+		this.vx += dt * this.ax
+		this.vy += dt * this.ay
+	},
+}
+
 const Tumbles = {
 	init: function (omega) {
 		this.omega = omega
@@ -129,6 +140,27 @@ const InfiniteHealth = {
 	},
 }
 
+const HasHealth = {
+	init: function (hp0, iflashmax) {
+		this.hp0 = hp0
+		this.iflashmax = iflashmax === undefined ? 1 : iflashmax
+	},
+	start: function () {
+		this.hp = this.hp0
+	},
+	hurt: function (damage) {
+		if (this.hp <= 0) return
+		this.hp -= damage
+		this.iflash = this.iflashmax
+		if (this.hp <= 0) {
+			sound.playsfx(state.bosses.includes(this) ? "boss-die" : "enemy-die")
+			this.die()
+		} else {
+			sound.playsfx("enemy-hurt")
+		}
+	},
+}
+
 // COLLISION
 
 const Collides = {
@@ -181,6 +213,18 @@ const Knockable = {
 	},
 }
 
+const KnocksOnCollision = {
+	init: function (dknock) {
+		this.dknock = dknock || 10
+	},
+	hit: function (target) {
+		if (target) {
+			let [dx, dy] = Math.norm([target.x - this.x, target.y - this.y], this.dknock)
+			target.knock(dx, dy)
+		}
+	},
+}
+
 const Visitable = {
 	init: function (help) {
 		this.help = help
@@ -204,6 +248,80 @@ const Visitable = {
 		})
 	},
 }
+
+const Collectable = {
+	think: function (dt) {
+		let dx = state.you.x - this.x, dy = state.you.y - this.y
+		if (Math.hypot(dx, dy) < state.rmagnet) {
+			;[dx, dy] = Math.norm([dx, dy], 300 * dt)
+			this.x += dx
+			this.y += dy
+		}
+	},
+	collect: function () {
+		sound.playsfx("get")
+		this.die()
+	},
+}
+
+const HealsOnCollect = {
+	init: function (heal) {
+		this.heal = heal || 1
+	},
+	collect: function () {
+		state.heal(this.heal)
+	},
+}
+
+// ENEMY BEHAVIOR
+
+const LetPickup = {
+	init: function (apickup) {
+		this.apickup = apickup || 0
+	},
+	die: function () {
+		if (this.hp <= 0) {
+			state.addapickup(this.apickup, this)
+		}
+	},
+}
+
+const SeeksFormation = {
+	init: function (vmax, accel) {
+		this.vmax = vmax
+		this.accel = accel
+	},
+	start: function () {
+		this.v = 0
+		this.vx = 0
+		this.vy = 0
+		this.target = null
+		this.steps = []
+	},
+	think: function (dt) {
+		while (this.steps.length && this.steps[0].t < this.t) {
+			this.target = [this.steps[0].x, this.steps[0].y]
+			this.steps = this.steps.slice(1)
+		}
+		if (!this.target) return
+		this.v = Math.min(this.v + dt * this.accel, this.vmax)
+		let [tx, ty] = this.target
+		let dx = tx - this.x, dy = ty - this.y
+		let d = Math.hypot(dx, dy)
+		let v = d < 0.01 ? 100 : Math.min(this.v, Math.sqrt(4 * this.accel * d) + 1)
+		if (v * dt >= d) {
+			;[this.x, this.y] = this.target
+			this.target = null
+			this.v = 0
+			this.vx = 0
+			this.vy = 0
+		} else {
+			;[this.vx, this.vy] = Math.norm([dx, dy], v)
+			this.x += this.vx * dt
+			this.y += this.vy * dt
+		}
+	},
+} 
 
 // DISPLAY
 
@@ -495,4 +613,39 @@ Capsule.prototype = UFX.Thing()
 	.addcomp(Tumbles, 1)
 	.addcomp(DrawAngleImage, "capsule", 1.7)
 	.addcomp(Visitable, true)
+
+function HealthPickup(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+HealthPickup.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(Collides, 5)
+	.addcomp(LinearMotion)
+	.addcomp(Accelerates)
+	.addcomp(Tumbles, 5)
+	.addcomp(DrawAngleImage, "health", 5)
+	.addcomp(Collectable)
+	.addcomp(HealsOnCollect)
+	// TODO: DisappearsOffscreen???
+
+
+
+function Duck(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+Duck.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(HasHealth, 3)
+	.addcomp(LetPickup, 1)
+	.addcomp(Collides, 20)
+	.addcomp(SeeksFormation, 400, 400)
+	.addcomp(DisappearsOffscreen)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(KnocksOnCollision, 40)
+//	.addcomp(LeavesCorpse)
+	.addcomp(DrawFacingImage, "duck", 1.8, -100)
 
