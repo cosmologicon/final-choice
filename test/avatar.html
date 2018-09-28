@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>star (visit scene) test</title>
+<base href="..">
+<script src="../UFX/src/gl.js"></script>
+<script src="../UFX/src/gltext.js"></script>
+<script src="../UFX/src/maximize.js"></script>
+<script src="../UFX/src/key.js"></script>
+<script src="../UFX/src/resource.js"></script>
+<script src="../UFX/src/random.js"></script>
+<script src="../UFX/src/ticker.js"></script>
+<script src="src/settings.js"></script>
+<script src="src/state.js"></script>
+<script src="src/draw.js"></script>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+"use strict"
+window.onerror = function (error, url, line) {
+	document.body.innerHTML = "<p>Error in: "+url+"<p>line "+line+"<pre>"+error+"</pre>"
+}
+settings.portrait = false
+draw.load()
+function think(dt) {
+	draw.clear()
+	draw.avatar("A", [200, 200], 100, 1)
+	draw.avatar("1", [100, 400], 30, 0)
+	draw.avatar("1", [200, 400], 30, 0.25)
+	draw.avatar("1", [300, 400], 30, 0.5)
+	draw.avatar("1", [400, 400], 30, 0.75)
+	draw.avatar("1", [500, 400], 30, 1)
+	let a = Date.now() / 500 % 4
+	a = Math.min(a, 4 - a, 1)
+	draw.avatar("J", [400, 200], 100, a)
+}
+UFX.resource.onload = () => {
+	draw.init()
+	UFX.ticker.init(think)
+}
+</script>
+

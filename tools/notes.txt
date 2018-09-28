@@ -1,0 +1,4 @@
+To resize biopix:
+
+cp ../../pyjam/final-choice/data/biopix/*.jpg ../data/biopix
+mogrify -resize 256x256 ../data/biopix/*.jpg
