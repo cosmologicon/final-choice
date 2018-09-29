@@ -125,6 +125,7 @@ let draw = {
 				source: UFX.resource.images["bio-" + a],
 				min_filter: gl.LINEAR_MIPMAP_NEAREST,
 				flip: true,
+				wrap: gl.CLAMP_TO_EDGE,
 			})
 		})
 	},
@@ -254,7 +255,9 @@ let draw = {
 		})
 		gl.drawArrays(gl.TRIANGLES, 0, data.nvert)
 	},
-	avatar: function (name, pos, s, a) {
+	avatar: function (name, pos, s, a, showtitle) {
+		a = Math.clamp(a, 0, 1)
+		if (a == 0) return
 		gl.progs.bio.use()
 		gl.activeTexture(gl.TEXTURE4)
 		gl.bindTexture(gl.TEXTURE_2D, this.biotextures[name])
@@ -264,12 +267,38 @@ let draw = {
 			sV: s,
 			a: a,
 			texture: 4,
+			T: Date.now() / 1400 % 1,
+			ocolor: [0.4, 0.4, 1],
 		})
 		pUbuffer.bind()
 		gl.progs.bio.assignAttribOffsets({
 			pU: 0,
 		})
 		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
+		if (showtitle && a == 1) {
+			gl.progs.text.use()
+			let text = {
+				"1": "Dr. Paulson",
+				"2": "Chf. Danilowka",
+				"3": "Lt. Jusuf",
+				"4": "Dr. Osaretin",
+				"5": "Mr. Tannenbaum",
+				"6": "Cmdr. Cooper",
+				"X": "Mr. Graves",
+				"J": "Prof. Jyn",
+				"C": "Gen. Cutter",
+				"7": "Capt. Gabriel",
+				"A": "Capt. Alyx",
+			}[name]
+			UFX.gltext(text, {
+				centerx: pos[0],
+				bottom: pos[1] - 0.5 * s,
+				owidth: 2,
+				ocolor: "black",
+				fontname: "Lalezar",
+				fontsize: T(12),  // TODO: make larger?
+			})
+		}
 	},
 }
 
@@ -541,11 +570,12 @@ uniform float sV;
 uniform float a;
 varying vec2 pT;
 varying vec2 rV, dpV;
+varying float owV;
 void main() {
 	// Half-dimensions of the avatar image or static rectangle
 	vec2 r0V = clamp((3.0 * a + vec2(1.0, 0.0)) * sV, 1.0, sV) / 2.0;
 	// Image margin
-	float dV = 0.06 * sV;
+	float dV = 0.03 * sV;
 	// Half-dimensions of the outline rectangle
 	rV = r0V + dV;
 	dpV = rV * pU;
@@ -553,17 +583,22 @@ void main() {
 	vec2 pV = centerV + dpV;
 	vec2 pP = pV / screensizeV * 2.0 - 1.0;
 	gl_Position = vec4(pP, 0.0, 1.0);
+	owV = ceil(sV / 100.0);
 }
 `
 shaders.bio.frag = `
 precision highp float;
 uniform float a;
 uniform sampler2D texture;
+uniform vec3 ocolor;
+varying float owV;
 varying vec2 pT;
 varying vec2 rV, dpV;
+uniform float T;
 void main() {
-	if (any(greaterThan(abs(dpV) - rV, vec2(-1.0)))) {
-		gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+	if (any(greaterThan(abs(dpV) - rV, vec2(-owV)))) {
+ 		float c = 0.8 + 0.2 * sin(6.283 * T);
+		gl_FragColor = vec4(ocolor * c, 1.0);
 	} else if (all(lessThan(vec2(0.0), pT)) && all(lessThan(pT, vec2(1.0)))) {
 	 	if (a < 1.0) {
 			gl_FragColor = vec4(0.4, 0.4, 0.4, 1.0);
@@ -575,36 +610,4 @@ void main() {
 	}
 }
 `
-/*
-
-def Bdraw(imgname, pos, s = 120, a = 1, ocolor = (100, 100, 255), showtitle = True):
-	if a < 0.01: return
-	w = util.clamp((3 * a - 1) * s, 1, s)
-	h = util.clamp((3 * a) * s, 1, s)
-	rect = pygame.Rect(0, 0, w, h)
-	rect.center = pos
-	if a < 1:
-		pygame.draw.rect(pview.screen, (100, 100, 100), T(rect))
-	rect.inflate_ip(8, 8)
-	ocolor = tuple(int(c * (0.8 + 0.2 * math.sin(0.01 * pygame.time.get_ticks()))) for c in ocolor)
-	pygame.draw.rect(pview.screen, ocolor, T(rect), T(2))
-	if a == 1:
-		Fdraw(os.path.join("data", "biopix", imgname + ".jpg"), pos, scale = s / 300)
-		name = {
-			"1": "Dr. Paulson",
-			"2": "Chf. Danilowka",
-			"3": "Lt. Jusuf",
-			"4": "Dr. Osaretin",
-			"5": "Mr. Tannenbaum",
-			"6": "Cmdr. Cooper",
-			"X": "Mr. Graves",
-			"J": "Prof. Jyn",
-			"C": "Gen. Cutter",
-			"7": "Capt. Gabriel",
-			"A": "Capt. Alyx",
-		}.get(imgname.split("-")[1])
-		if showtitle and name:
-			pos = T(pos[0], pos[1] + 0.6 * s)
-			ptext.draw(name, midbottom = pos, owidth = 2, fontname = "Lalezar", fontsize = T(12))
-*/
 

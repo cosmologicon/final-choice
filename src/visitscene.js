@@ -106,10 +106,6 @@ UFX.scenes.visit = {
 			scolor: "black",
 			alpha: talpha,
 		})
-		
-//	image.Bdraw(data["avatar"], pimg, a = util.clamp(self.t * 3 - 0.3, 0, 1), showtitle = False)
-//	image.Bdraw("bio-A", pyou, a = util.clamp(self.t * 3 - 1.3, 0, 1), showtitle = True)
-		
 		UFX.gltext(data.title, {
 			midtop: [pimg[0], pimg[1] - T(70)],
 			fontname: "Fjalla One",
@@ -123,6 +119,8 @@ UFX.scenes.visit = {
 			color: "yellow",
 			alpha: talpha,
 		})
+		draw.avatar(data.avatar, pimg, T(120), Math.clamp(this.t * 3 - 0.3, 0, 1), false)
+		draw.avatar("A", pyou, T(120), Math.clamp(this.t * 3 - 1.3, 0, 1), true)
 /*
 		if settings.DEBUG:
 			pos = T(475, 5) if settings.portrait else T(849, 5)
@@ -136,7 +134,7 @@ UFX.scenes.visit = {
 let vdata = {}
 vdata["1"] = {
 	"sname": "Paulson",
-	"avatar": "bio-1",
+	"avatar": "1",
 	"title": "Ship's Doctor",
 	"name": "Donovan Paulson",
 	"lines": [
@@ -155,7 +153,7 @@ vdata["1"] = {
 }
 vdata["2"] = {
 	"sname": "Danilowka",
-	"avatar": "bio-2",
+	"avatar": "2",
 	"title": "Chief Mechanic",
 	"name": "Sergey Danilowka",
 	"lines": [
@@ -175,7 +173,7 @@ vdata["2"] = {
 }
 vdata["3"] = {
 	"sname": "Jusuf",
-	"avatar": "bio-3",
+	"avatar": "3",
 	"title": "Security Chief",
 	"name": "Boris Jusuf",
 	"lines": [
@@ -194,7 +192,7 @@ vdata["3"] = {
 }
 vdata["4"] = {
 	"sname": "Osaretin",
-	"avatar": "bio-4",
+	"avatar": "4",
 	"title": "Head Engineer",
 	"name": "Obed Osaretin",
 	"lines": [
@@ -214,7 +212,7 @@ vdata["4"] = {
 }
 vdata["5"] = {
 	"sname": "Tannenbaum",
-	"avatar": "bio-5",
+	"avatar": "5",
 	"title": "Celestial Navigator",
 	"name": "Axel Tannenbaum",
 	"lines": [
@@ -234,7 +232,7 @@ vdata["5"] = {
 }
 vdata["6"] = {
 	"sname": "Cooper",
-	"avatar": "bio-6",
+	"avatar": "6",
 	"title": "First Officer",
 	"name": "Lydia Cooper",
 	"lines": [
@@ -254,7 +252,7 @@ vdata["6"] = {
 }
 vdata["7"] = {
 	"sname": "Gabriel",
-	"avatar": "bio-7",
+	"avatar": "7",
 	"title": "Captain",
 	"name": "P. Jim Gabriel",
 	"lines": [
@@ -274,7 +272,7 @@ vdata["7"] = {
 }
 vdata["X"] = {
 	"sname": "Graves",
-	"avatar": "bio-X",
+	"avatar": "X",
 	"title": "Astro Pilot",
 	"name": "Thornton Graves",
 	"lines": [

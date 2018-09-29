@@ -50,13 +50,51 @@ let state = {
 	missiletime: 0.6,
 	cshottime: 1,
 	rmagnet: 200,
+	dtinvulnerable: 1.5,
 
 	apickup0: 30,
 	
 	scrollspeed: 40,
 	yrange: 320,
 
-	
+	downgrade: function (name) {
+		if (name != "upgrade") this.downgraded = true
+		switch (name) {
+			case "hp":
+				this.hp0 -= 3
+				this.hp = Math.min(this.hp0, this.hp)
+				break
+			case "cshot":
+				this.cshottime = 1e12
+				break
+			case "companion":
+				this.companion = false
+				break
+			case "shield":
+				this.shieldhp0 -= 1
+				this.shieldhp = Math.min(this.shieldhp, this.shieldhp0)
+				break
+			case "missile":
+				this.missiletime = 1e12
+				break
+			case "vshot":
+				this.vshots = 0
+				break
+			case "charge":
+				this.dtinvulnerable = 0.6
+				break
+			case "upgrade":
+				this.hp = this.hp0 = 5
+				this.cshottime = 1
+				this.companion = true
+				this.shieldhp0 = this.miracle ? 4 : 2
+				this.shieldhp = this.shieldhp0
+				this.missiletime = 0.6
+				this.vshots = 3
+				this.chargetime = 3
+				break
+		}
+	},	
 
 	init: function () {
 		this.you = null
@@ -64,6 +102,7 @@ let state = {
 		this.restart()
 		this.y0 = 0
 		
+		this.downgraded = false
 		this.met = {}
 		this.apickup = 0
 	},
