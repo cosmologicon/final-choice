@@ -16,6 +16,7 @@ UFX.scenes.menu = {
 	onload: function () {
 		this.makeopts()
 		if (!this.moved) this.opt = this.opts[0]
+		audio.startgamemusic(0)
 	},
 	makeopts: function () {
 		this.opts = ["Play Easy", "Play Hard", "Settings", "Progress", "License"]
@@ -73,4 +74,78 @@ UFX.scenes.menu = {
 			this.drawline(text, -210, 16, "gray")
 		}
 	},
+}
+
+UFX.scenes.settings = {
+	start: function () {
+		this.opt = "Done"
+		this.opts = ["Layout", "Fullscreen", "Sound volume", "Music volume", "Voice volume", "Done"]
+	},
+	think: function (dt) {
+		let kstate = UFX.key.state()
+		if (kstate.down.down) {
+			this.opt = lnext(this.opts, this.opt)
+		}
+		if (kstate.down.up) {
+			this.opt = lprev(this.opts, this.opt)
+		}
+		if (kstate.down.left) this.advance(-1)
+		if (kstate.down.right) this.advance(1)
+		if (kstate.down.action) this.advance(1, true)
+	},
+	advance: function (dvalue, loop) {
+		let levels = [0, 0.2, 0.4, 0.6, 0.8, 1]
+		function alevel(level) {
+			if (dvalue == 1 && loop && level == 1) return 0
+			if (dvalue == -1 && loop && level == 0) return 1
+			return dvalue == 1 ? lnext(levels, level) : lprev(levels, level)
+		}
+		switch (this.opt) {
+			case "Layout":
+				settings.portrait = !settings.portrait
+				draw.setaspect()
+				break
+			case "Fullscreen":
+				settings.fullscreen = !settings.fullscreen
+				// TODO
+				break
+			case "Sound volume":
+				settings.sfxvolume = alevel(settings.sfxvolume)
+				audio.setsfxvolume(settings.sfxvolume)
+				break
+			case "Music volume":
+				settings.musicvolume = alevel(settings.musicvolume)
+				audio.setmusicvolume(settings.musicvolume)
+				break
+			case "Voice volume":
+				settings.dialogvolume = alevel(settings.dialogvolume)
+				audio.setdialogvolume(settings.dialogvolume)
+				break
+			case "Done":
+				UFX.scene.pop()
+				break
+		}
+	},
+	getsetting: function (opt) {
+		switch (opt) {
+			case "Layout": return settings.portrait ? "Vertical" : "Horizontal"
+			case "Fullscreen": return settings.fullscreen ? "ON" : "OFF"
+			case "Sound volume": return (settings.sfxvolume * 100).toFixed() + "%"
+			case "Music volume": return (settings.musicvolume * 100).toFixed() + "%"
+			case "Voice volume": return (settings.dialogvolume * 100).toFixed() + "%"
+		}
+	},
+	draw: function () {
+		draw.startalk()
+		
+		gl.progs.text.use()
+		this.opts.forEach((opt, jopt) => {
+			let text = opt
+			if (text != "Done") text += ": " + this.getsetting(opt)
+			if (opt == this.opt) text = "\u2022 " + text + " \u2022"
+			let color = opt == this.opt ? "white" : "#AAA"
+			UFX.scenes.menu.drawline(text, 60 - 40 * jopt, 32, color)
+		})
+	},
+
 }

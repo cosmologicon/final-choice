@@ -22,7 +22,8 @@ let audio = {
 		UFX.audio.makegainnode({ name: "main" })  // Only adjusted during pausing.
 		UFX.audio.makegainnode({ name: "sound", output: "main" })
 		UFX.audio.makegainnode({ name: "sfx", output: "sound" })
-		UFX.audio.makegainnode({ name: "music", output: "sound" })
+		UFX.audio.makegainnode({ name: "musicfade", output: "sound" })
+		UFX.audio.makegainnode({ name: "music", output: "musicfade" })
 		UFX.audio.makegainnode({ name: "gamemusic", output: "music" })
 		UFX.audio.makegainnode({ name: "endmusic", output: "music" })
 		UFX.audio.makegainnode({ name: "dialog", output: "main" })
@@ -54,6 +55,10 @@ let audio = {
 		voplayer.init()
 		this.on = true
 		this.offtimer = 0
+		
+		this.setsfxvolume(settings.sfxvolume)
+		this.setmusicvolume(settings.musicvolume)
+		this.setdialogvolume(settings.dialogvolume)
 	},
 	think: function (dt) {
 		let f = Math.exp(-2 * dt)
@@ -110,6 +115,8 @@ let audio = {
 			UFX.audio.playbuffer("fly", { name: "fly", output: "gamemusic", loop: true, gain: pvolume, cleanup: true, }),
 			UFX.audio.playbuffer("choose", { name: "choose", output: "gamemusic", loop: true, gain: 1 - pvolume, cleanup: true, }),
 		]
+		UFX.audio.setgain("musicfade", 0)
+		UFX.audio.setgain("musicfade", 1, { fade: 5, })
 	},
 	tofly: function () {
 		if (!UFX.audio.context) return

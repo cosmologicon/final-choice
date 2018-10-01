@@ -2,6 +2,10 @@
 
 let settings = {
 	portrait: true,
+	fullscreen: false,
+	sfxvolume: 1,
+	musicvolume: 1,
+	dialogvolume: 1,
 }
 
 UFX.key.remaparrows(true)
