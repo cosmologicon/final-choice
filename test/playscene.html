@@ -12,8 +12,10 @@
 <script src="../UFX/src/ticker.js"></script>
 <script src="../UFX/src/scene.js"></script>
 <script src="../UFX/src/Thing.js"></script>
+<script src="../UFX/src/audio.js"></script>
 <script src="src/setup.js"></script>
 <script src="src/state.js"></script>
+<script src="src/audio.js"></script>
 <script src="src/playscene.js"></script>
 <script src="src/thing.js"></script>
 <script src="src/settings.js"></script>
@@ -33,7 +35,7 @@ UFX.scenes.visit = {
 		UFX.scene.pop()
 	},
 }
-settings.portrait = true
+settings.portrait = false
 draw.load()
 UFX.resource.onload = () => {
 	draw.init()

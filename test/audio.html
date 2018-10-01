@@ -6,7 +6,9 @@
 <script src="../UFX/src/resource.js"></script>
 <script src="../UFX/src/audio.js"></script>
 <script src="../UFX/src/random.js"></script>
+<script src="../UFX/src/scene.js"></script>
 <script src="src/audio.js"></script>
+<script src="src/visitscene.js"></script>
 <body>
 <h1>audio test</h1>
 <p><button type=button onclick="audio.startgamemusic()">start game music</button>
@@ -22,6 +24,7 @@
 <p><input id=sfxvolume type="range" min=0 max=100 onchange="setsfxvolume()"> Sfx volume
 <p><button type=button onclick="audio.tofly()">To fly</button>
 <p><button type=button onclick="audio.tochoose()">To choose</button>
+<p><textarea id=currentline></textarea>
 <script>
 "use strict"
 window.onerror = function (error, url, line) {
@@ -41,7 +44,10 @@ function setsfxvolume() {
 }
 
 audio.init()
-setInterval((() => audio.think(0.1)), 100)
+setInterval((() => {
+	audio.think(0.05)
+	document.getElementById("currentline").value = voplayer.current
+}), 50)
 UFX.resource.onload = function () {
 	setmusicvolume()
 }

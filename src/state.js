@@ -114,6 +114,7 @@ let state = {
 		this.planets = []
 		this.enemies = []
 		this.bosses = []
+		this.spawners = []
 	},
 	restart: function () {
 		this.twin = 0
@@ -123,10 +124,10 @@ let state = {
 		this.xoffset = 0
 	},
 	think: function (dt) {
-		let objs = this.yous.concat(this.goodbullets, this.goodmissiles, this.pickups, this.planets, this.enemies, this.bosses)
+		let objs = this.yous.concat(this.goodbullets, this.goodmissiles, this.pickups, this.planets, this.enemies, this.bosses, this.spawners)
 		objs.forEach(obj => obj.think(dt))
 
-		;"yous goodbullets goodmissiles pickups enemies bosses planets".split(" ").forEach(gname => {
+		;"yous goodbullets goodmissiles pickups enemies bosses planets spawners".split(" ").forEach(gname => {
 			this[gname] = this[gname].filter(obj => obj.alive)
 		})
 
@@ -158,6 +159,8 @@ let state = {
 		
 		gl.progs.text.use()
 		this.planets.forEach(planet => planet.drawtext())
+		
+		this.spawners.forEach(spawners => spawner.draw())
 	},
 
 	addapickup: function (amount, who) {

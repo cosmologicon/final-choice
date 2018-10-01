@@ -219,6 +219,8 @@ let draw = {
 		})
 		if (!data.length) return
 		gl.progs.sprite.use()
+		gl.activeTexture(gl.TEXTURE3)
+		gl.bindTexture(gl.TEXTURE_2D, this.spritetexture)
 		gl.progs.sprite.set({
 			screensizeV: [this.wV, this.hV],
 			texture: 3,

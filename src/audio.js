@@ -51,19 +51,18 @@ let audio = {
 		})
 		UFX.audio.loadbuffers(buffers)
 		this.musicnodes = []
-		this.voqueue = []
-		this.vonode = null
+		voplayer.init()
 		this.on = true
 		this.offtimer = 0
 	},
 	think: function (dt) {
-		if (this.voqueue.length && !this.vonode) this._advancevoqueue()
 		let f = Math.exp(-2 * dt)
 		for (let sname in this.quiet) this.quiet[sname] *= f
 		if (this.offtimer) {
 			this.offtimer = Math.max(this.offtimer - dt, 0)
 			if (!this.offtimer) this.suspend()
 		}
+		voplayer.think(dt)
 	},
 	suspend: function () {
 		if (!UFX.audio.context) return
@@ -146,29 +145,14 @@ let audio = {
 	},
 
 	stopdialog: function () {
+		if (!UFX.audio.context) return
 		// TODO
 	},
 
-	// Voiceover (vo) refers to narrator and major character dialog
-	currentvoline: function () {
-		return this.voqueue.length ? this.voqueue[0] : null
-	},
 	playvoiceover: function (name) {
-		if (!UFX.audio.context) return
-		this.stopdialog()
-		this.voqueue = Dlines[name]
-		this._advancevoqueue(true)
+		voplayer.init(name)
 	},
-	_advancevoqueue: function (keep) {
-		if (!keep) this.voqueue.shift()
-		if (this.voqueue.length) {
-			let [buffername, who, char, text] = this.voqueue[0]
-			this.vonode = UFX.audio.playbuffer(buffername, { name: "vo", output: "dialog", })
-			this.vonode.addEventListener("ended", () => { this.vonode = null })
-		} else {
-			this.vonode = null
-		}
-	},
+
 	// One-off line by a Hawking crew memeber
 	playline: function (name) {
 		if (!UFX.audio.context) return
@@ -177,41 +161,106 @@ let audio = {
 	},
 }
 
+// Manage voiceover (vo), refering to narrator and major character dialog
+let voplayer = {
+	init: function (name) {
+		audio.stopdialog()
+		this.queue = name ? Dlines[name].slice() : []
+		this.alpha = 0
+		this.advance()
+	},
+	think: function (dt) {
+		if (this.done()) return
+		this.tcurrent = Math.max(this.tcurrent - dt, 0)
+		if (this.quiet()) {
+			this.alpha = Math.max(this.alpha - 3 * dt, 0)
+			if (this.alpha == 0) this.advance()
+		} else {
+			this.alpha = Math.min(this.alpha + 3 * dt, 1)
+		}
+	},
+	advance: function () {
+		if (!this.queue.length) {
+			this.current = null
+			return
+		}
+		this.current = this.queue.shift()
+		let [buffername, avatar, who, text] = this.current
+		if (UFX.audio.context) {
+			this.node = UFX.audio.playbuffer(buffername, { name: "vo", output: "dialog", })
+			this.node.addEventListener("ended", () => { this.node = null })
+			this.tcurrent = 0
+		} else {
+			this.node = null
+			this.tcurrent = 0.3 + 0.05 * text.length
+		}
+	},
+	// Whether the currently-playing line has ended.
+	quiet: function () {
+		return this.node == null && this.tcurrent == 0
+	},
+	done: function () {
+		return this.current == null && !this.queue.length && this.alpha == 0
+	},
+	draw: function () {
+		if (!this.current || this.alpha == 0) return
+		let [buffername, avatar, who, text] = this.current
+		if (avatar !== null) {
+			let pos = yswap(settings.portrait ? T(56, 800) : T(100, 426))
+			draw.avatar(avatar, pos, T(90), this.alpha, true)
+		}
+		let [fontname, fontsize, color, lineheight] = {
+			N: ["Fjalla One", 21, "#BBF", 1],
+			J: ["Lalezar", 21, "#BFB", 0.7],
+			C: ["Bungee", 18, "#FA5", 1.2],
+		}[who] || [null, 28, "white", 1]
+		fontsize = T(fontsize)
+		let width = settings.portrait ? T(340) : T(540)
+		let pos = yswap(settings.portrait ? T(100, 850) : T(160, 472))
+		gl.progs.text.use()
+		gl.progs.text.draw(text, {
+			bottomleft: pos, width: width,
+			fontname: fontname, fontsize: fontsize, lineheight: lineheight,
+			color: color, scolor: "black", alpha: this.alpha,
+		})
+	},
+}
+
 // Voiceover lines
 let Dlines = {}
 Dlines["intro"] = [
 	["Prologue1", null, "N", "Earth was in peril. A rift in spacetime was tearing through the cosmos, headed straight for the solar system."],
-	["Prologue2", "bio-C", "N", "Under the command of General Maxwell Cutter of Earth space fleet, a new weapon was developed to seal the rift."],
-	["Prologue3", "bio-7", "N", "The Starship Hawking, commanded by Cutter's son, Captain Gabriel, set out on the deadly mission to deploy the weapon and save humanity. The ship never returned."],
+	["Prologue2", "C", "N", "Under the command of General Maxwell Cutter of Earth space fleet, a new weapon was developed to seal the rift."],
+	["Prologue3", "7", "N", "The Starship Hawking, commanded by Cutter's son, Captain Gabriel, set out on the deadly mission to deploy the weapon and save humanity. The ship never returned."],
 	["Prologue4", null, "N", "While the evacuation of Earth is underway, General Cutter himself is nowhere to be found."],
-	["Prologue5", "bio-A", "N", `As Earth's end looms near, Captain Alyx, mother of one of the Hawking crew, receives a message from her daughter: "Find me at the rift."`],
+	["Prologue5", "A", "N", `As Earth's end looms near, Captain Alyx, mother of one of the Hawking crew, receives a message from her daughter: "Find me at the rift."`],
 ]
 
 Dlines["A"] = [
-	["A1", "bio-J", "J", "Mother! You got my message!"],
-	["A2", "bio-J", "J", "No time to explain. I've found out how to close the rift once and for all. It's the only chance to save Earth."],
-	["A3", "bio-C", "C", "Not so fast."],
-	["A4", "bio-J", "J", "General! What are you doing here?"],
-	["A5", "bio-J", "J", "Listen, you need to move away from the rift. I'm going to close it!"],
-	["A6", "bio-C", "C", "I can't let you do that. I don't know what I was ever thinking, trying to close this thing. But I'm a changed man now!"],
-	["A7", "bio-C", "C", "And once the rift reaches Earth, you'll see just how powerful it is! Bwa ha ha!"],
-	["A8", "bio-J", "J", "Mother, I don't know what's happened to him, but he has to be stopped. You take care of the fleet. I'll prepare to close the rift."],
-	["A9", "bio-J", "J", "Don't worry about me. I'm far enough from the action that I'll be safe."],
+	["A1", "J", "J", "Mother! You got my message!"],
+	["A2", "J", "J", "No time to explain. I've found out how to close the rift once and for all. It's the only chance to save Earth."],
+	["A3", "C", "C", "Not so fast."],
+	["A4", "J", "J", "General! What are you doing here?"],
+	["A5", "J", "J", "Listen, you need to move away from the rift. I'm going to close it!"],
+	["A6", "C", "C", "I can't let you do that. I don't know what I was ever thinking, trying to close this thing. But I'm a changed man now!"],
+	["A7", "C", "C", "And once the rift reaches Earth, you'll see just how powerful it is! Bwa ha ha!"],
+	["A8", "J", "J", "Mother, I don't know what's happened to him, but he has to be stopped. You take care of the fleet. I'll prepare to close the rift."],
+	["A9", "J", "J", "Don't worry about me. I'm far enough from the action that I'll be safe."],
 ]
 
 Dlines["climax"] = [
-	["C1", "bio-C", "C", "Noooo! This can't be happening!"],
-	["C2", "bio-J", "J", "It's almost over.... The rift is closing.... uh oh."],
-	["C3", "bio-J", "J", "There's an interdimensional mass imbalance. It won't close until something from our side goes through. At least fifty tons. A missile won't do."],
-	["C4", "bio-J", "J", "General, get away from the rift! It's extremely unstable until something enters it."],
-	["C5", "bio-C", "C", "I can't! I've lost engines! I've got less than a minute before I'm pulled into the gravity well!"],
-	["C6", "bio-J", "J", "Wait, that's perfect! Your ship has enough mass, once you hit the rift, it'll close for good!"],
-	["C7", "bio-C", "C", "My ship? What about me?! Won't that kill me?"],
-	["C8", "bio-J", "J", "I'm sorry, General. It's you or the Earth now. It's the lesser of two evils."],
-	["C9", "bio-C", "C", "Curse you, Alyx! Curse you, Jyn! Curse you Eaaaaaarth!"],
+	["C1", "C", "C", "Noooo! This can't be happening!"],
+	["C2", "J", "J", "It's almost over.... The rift is closing.... uh oh."],
+	["C3", "J", "J", "There's an interdimensional mass imbalance. It won't close until something from our side goes through. At least fifty tons. A missile won't do."],
+	["C4", "J", "J", "General, get away from the rift! It's extremely unstable until something enters it."],
+	["C5", "C", "C", "I can't! I've lost engines! I've got less than a minute before I'm pulled into the gravity well!"],
+	["C6", "J", "J", "Wait, that's perfect! Your ship has enough mass, once you hit the rift, it'll close for good!"],
+	["C7", "C", "C", "My ship? What about me?! Won't that kill me?"],
+	["C8", "J", "J", "I'm sorry, General. It's you or the Earth now. It's the lesser of two evils."],
+	["C9", "C", "C", "Curse you, Alyx! Curse you, Jyn! Curse you Eaaaaaarth!"],
 ]
 Dlines["climax2"] = [
-	["C10", "bio-J", "J", "Mother, no!"],
+	["C10", "J", "J", "Mother, no!"],
 ]
 
 Dlines["B"] = [

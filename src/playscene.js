@@ -12,7 +12,8 @@ UFX.scenes.play = {
 //		makewaves()
 
 
-		state.planets.push(new Capsule({ name: "1", x: 0, y: 0, vx: -20, vy: 0, }))
+//		state.planets.push(new Capsule({ name: "1", x: 0, y: 0, vx: -20, vy: 0, }))
+		audio.playvoiceover("intro")
 		state.addduckwave(700, 500, 4, 4, [
 			[0, 350, 100],
 			[4, 200, -200],
@@ -39,6 +40,7 @@ UFX.scenes.play = {
 		}
 		// view.think(dt)
 		state.think(dt)
+		audio.think(dt)
 	},
 	draw: function () {
 		if (settings.lowres) {
@@ -49,6 +51,7 @@ UFX.scenes.play = {
 		}
 		state.draw()
 		// hud.draw()
+		voplayer.draw()
 		if (state.tlose) {
 			let alpha = Math.clamp(state.tlose - 2, 0, 1)
 			draw.fill([0, 0, 0, alpha])
