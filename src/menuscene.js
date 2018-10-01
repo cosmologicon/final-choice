@@ -14,6 +14,7 @@ UFX.scenes.menu = {
 		if (objtype == "fonts") gl.progs.text.clear()
 	},
 	onload: function () {
+		draw.init()
 		this.makeopts()
 		if (!this.moved) this.opt = this.opts[0]
 		audio.startgamemusic(0)

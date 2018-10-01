@@ -180,6 +180,7 @@ let state = {
 		this.enemies = []
 		this.badbullets = []
 		this.bosses = []
+		this.corpses = []
 		this.spawners = []
 		this.waves = []
 	},
@@ -192,11 +193,11 @@ let state = {
 	},
 	think: function (dt) {
 		let objs = this.yous.concat(this.goodbullets, this.goodmissiles, this.pickups, this.planets,
-			this.enemies, this.badbullets, this.bosses, this.spawners)
+			this.enemies, this.badbullets, this.bosses, this.spawners, this.corpses)
 		objs.forEach(obj => obj.think(dt))
 
 
-		;"yous goodbullets goodmissiles pickups enemies badbullets bosses planets spawners".split(" ").forEach(gname => {
+		;"yous goodbullets goodmissiles pickups enemies badbullets bosses planets spawners corpses".split(" ").forEach(gname => {
 			this[gname] = this[gname].filter(obj => obj.alive)
 		})
 
@@ -239,7 +240,7 @@ let state = {
 			this.twin += dt
 			this.badbullets.forEach(bullet => {
 				if (bullet.alive) {
-					this.corspes.push(new Corpse({ x: bullet.x, y: bullet.y, r: bullet.r, lifetime: 1 }))
+					this.corpses.push(new Corpse({ x: bullet.x, y: bullet.y, r: bullet.r, lifetime: 1 }))
 					bullet.alive = false
 				}
 			})
@@ -252,7 +253,7 @@ let state = {
 	draw: function () {
 		let sprites = this.yous.concat(this.enemies, this.bosses, this.goodmissiles, this.pickups, this.planets)
 		draw.sprites(sprites.map(sprite => sprite.spritedata()))
-		let bullets = this.goodbullets
+		let bullets = this.goodbullets.concat(this.badbullets, this.corpses)
 		draw.bullets(bullets.map(bullet => bullet.objdata()))
 		
 		gl.progs.text.use()
@@ -280,7 +281,11 @@ let state = {
 
 	addwave: function (wave) {
 		let t = wave[0], func = wave[1], args = wave.slice(2)
+		console.log(wave)
 		this[func].apply(this, args)
+	},
+	playvo: function (name) {
+		audio.playvoiceover(name)
 	},
 	addformationwave: function (EType, x0, y0, nx, ny, steps) {
 		let r = 50
@@ -300,9 +305,43 @@ let state = {
 		this.addformationwave(Duck, x0, y0, nx, ny, steps)
 	},
 
+	addheronsplash(nx, ny, x0) {
+		if (x0 === undefined) x0 = 1000
+		for (let ax = 0 ; ax < nx ; ++ax) {
+			for (let ay = 0 ; ay < ny ; ++ay) {
+				this.enemies.push(new Heron({
+					x: x0,
+					y: (ay - (ny - 1) / 2) / ny * 2 * 300,
+					vx: -40 - 20 * ax,
+					vy: 0,
+				}))
+			}
+		}
+	},
+	addemu: function () {
+		this.bosses.push(new Emu({ x: 600, y: 0, xtarget: 100 }))
+	},
+
+
 
 	heal: function (amount) {
 		this.hp = Math.min(this.hp + amount, this.hp0)
+	},
+	takedamage: function (damage) {
+		if (this.tinvulnerable) return
+		while (this.shieldhp >= 1 && damage) {
+			this.shieldhp -= 1
+			damage -= 1
+		}
+		this.hp -= damage
+		this.tinvulnerable = this.dtinvulnerable
+		this.you.iflash = this.tinvulnerable
+		if (this.hp <= 0) {
+			this.you.die()
+			audio.playsfx("you-die")
+		} else {
+			audio.playsfx("you-hurt")
+		}
 	},
 
 	savedall: function () {

@@ -129,6 +129,51 @@ const SeeksEnemies = {
 	},
 }
 
+const SeeksHorizontalPosition = {
+	init: function (vxmax, accel) {
+		this.vxmax = vxmax
+		this.xaccel = accel
+	},
+	start: function () {
+		this.vx = 0
+		this.xtarget = null
+	},
+	think: function (dt) {
+		if (this.xtarget === null) return
+		this.vx = Math.abs(this.vx)
+		this.vx = Math.min(this.vx + dt * this.xaccel, this.vxmax)
+		let dx = Math.abs(this.xtarget - this.x), v
+		if (dx < 0.01) {
+			v = 100
+		} else {
+			v = Math.min(this.vx, Math.sqrt(2 * 2 * this.xaccel * dx) + 1)
+		}
+		if (v * dt >= dx) {
+			this.x = this.xtarget
+			this.xtarget = null
+			this.vx = 0
+		} else {
+			this.vx = this.xtarget > this.x ? v : -v
+			this.x += this.vx * dt
+		}
+	},
+}
+
+const VerticalSinusoid = {
+	init: function (yomega, yrange, y0) {
+		this.yomega = yomega
+		this.yrange = yrange
+		this.y0 = y0 || 0
+	},
+	start: function () {
+		this.ytheta = 0
+	},
+	think: function (dt) {
+		this.ytheta += dt * this.yomega
+		this.y = this.y0 + this.yrange * Math.sin(this.ytheta)
+		this.vy = this.yrange * this.yomega * Math.cos(this.ytheta)
+	},
+}
 
 // HEALTH
 
@@ -286,6 +331,94 @@ const LetPickup = {
 	},
 }
 
+const BossBound = {
+	init: function (diedelay) {
+		this.diedelay = diedelay || 0
+	},
+	start: function () {
+		this.target = null
+	},
+	think: function (dt) {
+		if (!this.alive) return
+		if (this.target && !this.target.alive) {
+			this.diedelay -= dt
+			if (this.diedelay <= 0) this.die()
+		}
+	},
+}
+
+const ABBullets = {
+	init: function (nbullet, dtbullet) {
+		this.nbullet = nbullet
+		this.dtbullet = dtbullet
+	},
+	start: function () {
+		this.tbullet = 0
+		this.vbullet = 50
+		this.jbullet = 0
+	},
+	think: function (dt) {
+		this.tbullet += dt
+		while (this.tbullet >= this.dtbullet) {
+			for (let jtheta = 0 ; jtheta < this.nbullet ; ++jtheta) {
+				let theta = (jtheta + this.jbullet / 2) / this.nbullet * Math.tau
+				let dx = Math.cos(theta), dy = Math.sin(theta)
+				let r = this.r + 2
+				state.badbullets.push(new BadBullet({
+					x: this.x + r * dx, y: this.y + r * dy,
+					vx: this.vbullet * dx, vy: this.vbullet * dy,
+				}))
+			}
+			this.tbullet -= this.dtbullet
+			this.jbullet = 1 - this.jbullet
+		}
+	},
+}
+
+const RoundhouseBullets = {
+	init: function (dtbullet) {
+		this.dtbullet = dtbullet || 0.3
+	},
+	start: function () {
+		this.tbullet = 0
+		this.nbullet = 20
+		this.vbullet = 50
+		this.jbullet = 0
+	},
+	think: function (dt) {
+		this.tbullet += dt
+		while (this.tbullet >= this.dtbullet) {
+			for (let jtheta = 0 ; jtheta < 3 ; ++jtheta) {
+				let theta = (this.jbullet / this.nbullet + jtheta / 3) * Math.tau
+				let dx = Math.cos(theta), dy = Math.sin(theta)
+				let r = this.r + 2
+				state.badbullets.push(new BadBullet({
+					x: this.x + r * dx, y: this.y + r * dy,
+					vx: this.vbullet * dx, vy: this.vbullet * dy,
+				}))
+			}
+			this.tbullet -= this.dtbullet
+			this.jbullet += 1
+		}
+	},
+}
+
+const SpawnsClusterBullets = {
+	init: function (dtcb) {
+		this.dtcb = dtcb
+	},
+	start: function () {
+		this.tcb = 0
+		this.jcb = 0
+	},
+	think: function (dt) {
+		for (this.tcb += dt ; this.tcb >= this.dtcb ; this.tcb -= this.dtcb , ++this.jcb) {
+			let y = (this.jcb * Math.phi % 1 * 2 - 1) * state.yrange
+			state.badbullets.push(new BadClusterBullet({ x: 500, y: y, vx: -100, vy: 0 }))
+		}
+	},
+}
+
 const SeeksFormation = {
 	init: function (vmax, accel) {
 		this.vmax = vmax
@@ -321,7 +454,31 @@ const SeeksFormation = {
 			this.y += this.vy * dt
 		}
 	},
-} 
+}
+
+const ClustersNearYou = {
+	init: function (nbullet, dyou, vbullet) {
+		this.nbullet = nbullet
+		this.dyou = dyou
+		this.vbullet = vbullet || 50
+	},
+	think: function (dt) {
+		if (!state.you.alive) return
+		if (Math.hypot(this.x - state.you.x, this.y - state.you.y) < this.dyou) {
+			let r = this.r
+			for (let jtheta = 0 ; jtheta < this.nbullet ; ++jtheta) {
+				let theta = jtheta / this.nbullet * Math.tau
+				let dx = Math.cos(theta), dy = Math.sin(theta)
+				state.badbullets.push(new BadBullet({
+					x: this.x + r * dx, y: this.y + r * dy,
+					vx: this.vbullet * dx, vy: this.vbullet * dy,
+				}))
+			}
+			this.alive = false
+			audio.playsfx("boom")
+		}
+	},
+}
 
 // DISPLAY
 
@@ -330,8 +487,38 @@ const DrawGlow = {
 		return {
 			x: this.x, y: this.y,
 			r: this.r,
-			color: [0.8, 0.8, 1],
+			color: [0.8, 0.8, 1, 1],
 		}
+	},
+}
+const DrawFlash = {
+	start: function () {
+		this.dtflash = UFX.random()
+	},
+	objdata: function () {
+		let color = (this.t + this.dtflash) * 5 % 1 > 0.5 ? [1, 0.5, 0.5, 1] : [1, 1, 0, 1]
+		return {
+			x: this.x, y: this.y,
+			r: this.r,
+			color: color,
+		}
+	},
+}
+const DrawCorpse = {
+	objdata: function () {
+		let alpha = 1 - this.f * this.f
+		let color = this.t * 20 % 2 >= 1 ? [1, 0.5, 0.5, alpha] : [1, 1, 0, alpha]
+		let r = this.r * (1 + this.f)
+		return {
+			x: this.x, y: this.y,
+			r: r,
+			color: color,
+		}
+	},
+}
+const LeavesCorpse = {
+	die: function () {
+		state.corpses.push(new Corpse({ x: this.x, y: this.y, r: this.r, }))
 	},
 }
 
@@ -381,7 +568,6 @@ const DrawFacingImage = {
 		}
 	},
 }
-
 
 // PLAYER CONTROL
 
@@ -550,7 +736,7 @@ You.prototype = UFX.Thing()
 	.addcomp(ConstrainToScreen, 5, 5)
 //	.addcomp(FlashesOnInvulnerable)
 	.addcomp(DrawFacingImage, "you", 5, 1000)
-//	.addcomp(LeavesCorpse)
+	.addcomp(LeavesCorpse)
 	.addcomp({
 		hurt: function (damage) {
 			state.takedamage(damage)
@@ -631,6 +817,34 @@ HealthPickup.prototype = UFX.Thing()
 	// TODO: DisappearsOffscreen???
 
 
+function BadBullet(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+BadBullet.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(Collides, 3)
+	.addcomp(LinearMotion)
+	.addcomp(DiesOnCollision)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(DisappearsOffscreen)
+	.addcomp(DrawFlash)
+
+function BadClusterBullet(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+BadClusterBullet.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(Collides, 6)
+	.addcomp(LinearMotion)
+	.addcomp(DiesOnCollision)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(ClustersNearYou, 20, 80)
+	.addcomp(DisappearsOffscreen)
+	.addcomp(DrawFlash)
 
 function Duck(obj) {
 	this.start()
@@ -646,6 +860,58 @@ Duck.prototype = UFX.Thing()
 	.addcomp(DisappearsOffscreen)
 	.addcomp(HurtsOnCollision, 2)
 	.addcomp(KnocksOnCollision, 40)
-//	.addcomp(LeavesCorpse)
+	.addcomp(LeavesCorpse)
 	.addcomp(DrawFacingImage, "duck", 1.8, -100)
+
+function Heron(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+Heron.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(BossBound)
+	.addcomp(HasHealth, 10)
+	.addcomp(LetPickup, 1)
+	.addcomp(Collides, 20)
+	.addcomp(LinearMotion)
+	.addcomp(DisappearsOffscreen)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(KnocksOnCollision, 40)
+	.addcomp(ABBullets, 12, 3)
+	.addcomp(Tumbles, 2)
+	.addcomp(DrawAngleImage, "heron", 1.5)
+	.addcomp(LeavesCorpse)
+
+function Emu(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+Emu.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(HasHealth, 200)
+	.addcomp(Collides, 100)
+	.addcomp(RoundhouseBullets, 1)
+	.addcomp(SeeksHorizontalPosition, 30, 30)
+	.addcomp(VerticalSinusoid, 0.4, 120)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(KnocksOnCollision, 40)
+	.addcomp(SpawnsClusterBullets, 2)
+	.addcomp(Tumbles, 0.4)
+	.addcomp(DrawAngleImage, "heron", 1.5)
+	.addcomp(LeavesCorpse)
+
+
+
+function Corpse(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+Corpse.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(Lifetime, 0.2)
+	.addcomp(Collides, 0)
+	.addcomp(DrawCorpse)
 

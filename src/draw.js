@@ -536,10 +536,10 @@ shaders.bullet.vert = `
 attribute vec2 pU;  // Unit coordinates
 attribute vec2 pG0;  // Position in game coordinates
 attribute float GscaleU;  // bullet radius
-attribute vec3 color;
+attribute vec4 color;
 uniform vec2 screensizeV;
 uniform float y0G;  // Game coordinate at the halfway point (vertical in landscape)
-varying vec3 tcolor;
+varying vec4 tcolor;
 varying vec2 pT;
 const vec2 PscaleG = vec2(1.0 / 427.0, 1.0 / 240.0);
 void main() {
@@ -560,11 +560,12 @@ void main() {
 `
 shaders.bullet.frag = `
 precision highp float;
-varying vec3 tcolor;
+varying vec4 tcolor;
 varying vec2 pT;
 void main() {
 	float alpha = length(pT) < 1.0 ? 1.0 : 0.0;
-	gl_FragColor = vec4(tcolor, alpha);
+	gl_FragColor = tcolor;
+	gl_FragColor.a *= alpha;
 }
 `
 

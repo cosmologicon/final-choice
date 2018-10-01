@@ -19,7 +19,8 @@ let save = {
 	},
 	load: function () {
 		if (!localStorage[this.name]) return
-		let obj = localStorage[this.name]
+		let obj = JSON.parse(localStorage[this.name])
+		if (!obj) return
 		if ("settings" in obj) settings = obj.settings
 		if ("progress" in obj) progress = obj.progress
 		if ("checkpoint" in obj) checkpoint = obj.checkpoint

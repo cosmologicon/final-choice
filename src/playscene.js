@@ -10,19 +10,28 @@ UFX.scenes.play = {
 		state.yous.push(state.you)
 
 		this.makewaves()
-
+		audio.tofly()
 
 //		state.planets.push(new Capsule({ name: "1", x: 0, y: 0, vx: -20, vy: 0, }))
 	},
 	makewaves: function () {
 		if (state.stage == 1) {
 			state.waves = [
+				[3, "playvo", "intro"],
 				[0, "addduckwave", 700, 500, 4, 4, [
 					[0, 350, 100],
 					[4, 200, -200],
 					[8, 0, 100],
 					[12, -600, 200],
 				]],
+				[0, "addduckwave", 700, -500, 4, 4, [
+					[0, 350, -100],
+					[4, 200, 200],
+					[8, 0, -100],
+					[12, -600, -200],
+				]],
+				[0, "addheronsplash", 2, 2],
+				[20, "addemu"],
 			]
 		}
 	},
