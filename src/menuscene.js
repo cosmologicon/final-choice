@@ -42,6 +42,10 @@ UFX.scenes.menu = {
 	select: function () {
 		switch (this.opt) {
 			case "Settings": UFX.scene.push("settings") ; break
+			case "Progress": UFX.scene.push("progress") ; break
+			case "License":
+				window.open("license", "_blank")
+				break
 		}
 	},
 	drawline: function (text, h, fontsize, color) {
