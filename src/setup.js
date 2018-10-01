@@ -11,4 +11,10 @@ Math.norm = function (v, r) {
 Math.clamp = function (x, a, b) {
 	return x < a ? a : x > b ? b : x
 }
+function lnext(a, x) {
+	return a[Math.min(a.indexOf(x) + 1, a.length - 1)]
+}
+function lprev(a, x) {
+	return a[Math.max(a.indexOf(x) - 1, 0)]
+}
 UFX.key.init()

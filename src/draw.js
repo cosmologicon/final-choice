@@ -55,8 +55,7 @@ let draw = {
 		})
 		UFX.resource.loadwebfonts("Bungee", "Fjalla One", "Lalezar", "Londrina Solid", "Passion One", "Permanent Marker")
 		UFX.gltext.DEFAULT.lineheight = 1.2
-	},
-	init: function () {
+
 		this.pixelratio = window.devicePixelRatio || 1
 		this.canvas = document.getElementById("canvas")
 		gl = UFX.gl(canvas)
@@ -80,7 +79,7 @@ let draw = {
 			this.aspect = aspect
 			this.f = this.sV / Math.sqrt(854 * 480)
 		}
-		UFX.maximize(canvas, { aspects: [settings.portrait ? 9/16 : 16/9], fillcolor: "#111" })
+		this.setaspect()
 		gl.disable(gl.DEPTH_TEST)
 		gl.enable(gl.BLEND)
 		gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, 0, 1)
@@ -104,7 +103,13 @@ let draw = {
 		})
 		gl.activeTexture(gl.TEXTURE1)
 		gl.bindTexture(gl.TEXTURE_2D, this.nebulatexture)
-
+	},
+	// Call after changing settings.portrait
+	setaspect: function () {
+		UFX.maximize(canvas, { aspects: [settings.portrait ? 9/16 : 16/9], fillcolor: "#111" })
+	},
+	// Call after UFX.resource finishes loading
+	init: function () {
 		this.rocktexture = gl.buildTexture({
 			source: UFX.resource.images.rocks,
 			min_filter: gl.LINEAR_MIPMAP_NEAREST,

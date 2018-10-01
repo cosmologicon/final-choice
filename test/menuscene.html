@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>playscene test</title>
+<base href="..">
+<script src="../UFX/src/gl.js"></script>
+<script src="../UFX/src/gltext.js"></script>
+<script src="../UFX/src/maximize.js"></script>
+<script src="../UFX/src/key.js"></script>
+<script src="../UFX/src/resource.js"></script>
+<script src="../UFX/src/random.js"></script>
+<script src="../UFX/src/ticker.js"></script>
+<script src="../UFX/src/scene.js"></script>
+<script src="../UFX/src/Thing.js"></script>
+<script src="../UFX/src/audio.js"></script>
+<script src="src/setup.js"></script>
+<script src="src/state.js"></script>
+<script src="src/menuscene.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/visitscene.js"></script>
+<script src="src/settings.js"></script>
+<script src="src/draw.js"></script>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+"use strict"
+window.onerror = function (error, url, line) {
+	document.body.innerHTML = "<p>Error in: "+url+"<p>line "+line+"<pre>"+error+"</pre>"
+}
+settings.portrait = false
+draw.load()
+audio.init()
+UFX.scene.init()
+UFX.scene.ipush("menu")
+</script>
+
