@@ -14,11 +14,13 @@
 <script src="../UFX/src/Thing.js"></script>
 <script src="../UFX/src/audio.js"></script>
 <script src="src/setup.js"></script>
+<script src="src/settings.js"></script>
+<script src="src/save.js"></script>
 <script src="src/state.js"></script>
 <script src="src/audio.js"></script>
 <script src="src/playscene.js"></script>
+<script src="src/visitscene.js"></script>
 <script src="src/thing.js"></script>
-<script src="src/settings.js"></script>
 <script src="src/draw.js"></script>
 <body>
 <canvas id="canvas"></canvas>
@@ -27,9 +29,6 @@
 window.onerror = function (error, url, line) {
 	document.body.innerHTML = "<p>Error in: "+url+"<p>line "+line+"<pre>"+error+"</pre>"
 }
-let sound = {
-	playsfx: () => {},
-}
 UFX.scenes.visit = {
 	think: function (dt) {
 		UFX.scene.pop()
@@ -37,8 +36,10 @@ UFX.scenes.visit = {
 }
 settings.portrait = false
 draw.load()
+audio.init()
 UFX.resource.onload = () => {
 	draw.init()
+	state.stage = 1
 	UFX.scene.init()
 	UFX.scene.push("play")
 }

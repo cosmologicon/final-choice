@@ -153,10 +153,10 @@ const HasHealth = {
 		this.hp -= damage
 		this.iflash = this.iflashmax
 		if (this.hp <= 0) {
-			sound.playsfx(state.bosses.includes(this) ? "boss-die" : "enemy-die")
+			audio.playsfx(state.bosses.includes(this) ? "boss-die" : "enemy-die")
 			this.die()
 		} else {
-			sound.playsfx("enemy-hurt")
+			audio.playsfx("enemy-hurt")
 		}
 	},
 }
@@ -259,7 +259,7 @@ const Collectable = {
 		}
 	},
 	collect: function () {
-		sound.playsfx("get")
+		audio.playsfx("get")
 		this.die()
 	},
 }
@@ -445,7 +445,7 @@ const FiresWithSpace = {
 			state.goodbullets.push(new GoodBullet({
 				x: x0 + dx, y: y0 - dy, vx: 500, vy: 0, r: 3, damage: 1, lifetime: 0.2, }))
 		}
-		sound.playsfx("shot")
+		audio.playsfx("shot")
 		this.tshot = 0
 	},
 	draw: function () {

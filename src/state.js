@@ -1,3 +1,9 @@
+// The state object holds the frame-by-frame game state, including entities on screen etc.
+// The checkpoint object holds the relevant part of the state at the beginning of the current wave,
+//   i.e. enough to reconstruct the state if you die.
+// The progress object holds which objectives have been completed on complete playthroughs.
+
+
 "use strict"
 
 function collided(obj1, obj2) {
@@ -33,6 +39,16 @@ function bisect(a, x) {
 	return j
 }
 
+let progress = {
+	beaten: false,  // Once the game has been beaten once (any ending) hard mode is unnlocked
+	met: {},
+	saved: {},
+	good: false,
+	best: false,
+}
+let checkpoint = null  // null = no checkpoint data.
+
+
 let state = {
 
 	speed: 200,
@@ -57,8 +73,19 @@ let state = {
 	scrollspeed: 40,
 	yrange: 320,
 
+	setbase: function () {
+		this.shieldhp0 = this.miracle ? 4 : 2
+		this.apickup0 = this.miracle ? 30 : 60
+		this.shieldrate = this.miracle ? 0.2 : 0.1
+	},
+
 	downgrade: function (name) {
-		if (name != "upgrade") this.downgraded = true
+		if (name == "upgrade") {
+			this.downgrades = []
+		} else {
+			this.downgrades.push(name)
+		}
+			
 		switch (name) {
 			case "hp":
 				this.hp0 -= 3
@@ -96,15 +123,53 @@ let state = {
 		}
 	},	
 
+	// Reset checkpoint if any and start from stage 1
+	// Set state.miracle to true before calling in easy mode.
+	startgame: function () {
+		this.stage = 1
+		this.setbase()
+		this.downgrades = []
+		this.met = {}
+		this.saved = {}
+		this.apickup = 0
+		checkpoint = null
+		save.save()
+	},
+	// Load from checkpoint
+	continuegame: function () {
+		if (checkpoint === null) {
+			this.startgame()
+			return
+		}
+		this.miracle = checkpoint.miracle
+		this.stage = checkpoint.stage
+		this.setbase()
+		this.downgrades = []
+		checkpoint.downgrades.forEach(name => this.downgrade(name))
+		this.met = checkpoint.met
+		this.saved = checkpoint.saved
+		this.apickup = checkpoint.apickup
+	},
+	// Call at the beginning of each stage.
 	init: function () {
 		this.you = null
 		this.clear()
 		this.restart()
 		this.y0 = 0
 		
-		this.downgraded = false
-		this.met = {}
-		this.apickup = 0
+		if (this.stage == 1) {
+			checkpoint = null
+		} else {
+			checkpoint = {
+				stage: this.stage,
+				miracle: this.miracle,
+				downgrades: this.downgrades,
+				met: this.met,
+				saved: this.saved,
+				apickup: this.apickup,
+			}
+		}
+		save.save()
 	},
 	clear: function () {
 		this.yous = []
@@ -113,8 +178,10 @@ let state = {
 		this.pickups = []
 		this.planets = []
 		this.enemies = []
+		this.badbullets = []
 		this.bosses = []
 		this.spawners = []
+		this.waves = []
 	},
 	restart: function () {
 		this.twin = 0
@@ -124,10 +191,12 @@ let state = {
 		this.xoffset = 0
 	},
 	think: function (dt) {
-		let objs = this.yous.concat(this.goodbullets, this.goodmissiles, this.pickups, this.planets, this.enemies, this.bosses, this.spawners)
+		let objs = this.yous.concat(this.goodbullets, this.goodmissiles, this.pickups, this.planets,
+			this.enemies, this.badbullets, this.bosses, this.spawners)
 		objs.forEach(obj => obj.think(dt))
 
-		;"yous goodbullets goodmissiles pickups enemies bosses planets spawners".split(" ").forEach(gname => {
+
+		;"yous goodbullets goodmissiles pickups enemies badbullets bosses planets spawners".split(" ").forEach(gname => {
 			this[gname] = this[gname].filter(obj => obj.alive)
 		})
 
@@ -143,14 +212,43 @@ let state = {
 			let [b, e] = pair
 			b.hit(e)
 		})
+		getcollisions(this.badbullets, this.yous.concat(this.planets)).forEach(pair => {
+			let [b, e] = pair
+			b.hit(e)
+		})
 
+		this.waves = this.waves.filter(wave => {
+			let t = wave[0]
+			if (this.you.t >= t) {
+				this.addwave(wave)
+				return false
+			}
+			return true
+		})
 
 		let ymax = this.yrange - this.you.r
 		let y0max = this.yrange - 240
 		let a = y0max / (2 * Math.pow(ymax, 3))
 		let b = 3 * Math.pow(ymax, 2) * a
 		this.y0 = b * this.you.y - a * Math.pow(this.you.y, 3)
-	},	
+		
+		this.checkwin(dt)
+	},
+	checkwin: function (dt) {
+		if (!this.waves.length && !this.bosses.length && !this.spawners.length && voplayer.done()) {
+			this.twin += dt
+			this.badbullets.forEach(bullet => {
+				if (bullet.alive) {
+					this.corspes.push(new Corpse({ x: bullet.x, y: bullet.y, r: bullet.r, lifetime: 1 }))
+					bullet.alive = false
+				}
+			})
+			if (this.twin > 2) {
+				this.you.x += (this.twin - 2) * 1000 * dt
+				if (this.you.x > 1000) this.win()
+			}
+		}
+	},
 	draw: function () {
 		let sprites = this.yous.concat(this.enemies, this.bosses, this.goodmissiles, this.pickups, this.planets)
 		draw.sprites(sprites.map(sprite => sprite.spritedata()))
@@ -179,6 +277,11 @@ let state = {
 		}))
 	},
 
+
+	addwave: function (wave) {
+		let t = wave[0], func = wave[1], args = wave.slice(2)
+		this[func].apply(this, args)
+	},
 	addformationwave: function (EType, x0, y0, nx, ny, steps) {
 		let r = 50
 		for (let jx = 0, j = 0 ; jx < nx ; ++jx) {
@@ -201,5 +304,26 @@ let state = {
 	heal: function (amount) {
 		this.hp = Math.min(this.hp + amount, this.hp0)
 	},
+
+	savedall: function () {
+		return "1234567X".split("").every(who => this.saved[who])
+	},
+	win: function () {
+		switch (this.stage) {
+			case 3:
+				this.met.C = true
+				this.met.J = true
+			case 1: case 2:
+				this.stage += 1
+				UFX.scene.swap("play")
+				break
+			case 4:
+				if (this.savedall()) {
+					UFX.scene.swap("climax")
+				} else {
+					UFX.scene.swap("win")
+				}
+				break
+		}
+	},
 }
-state.init()

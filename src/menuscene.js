@@ -19,10 +19,20 @@ UFX.scenes.menu = {
 		audio.startgamemusic(0)
 	},
 	makeopts: function () {
-		this.opts = ["Play Easy", "Play Hard", "Settings", "Progress", "License"]
+		if (!progress.beaten && checkpoint === null) {
+			this.opts = ["Play"]
+		} else if (!progress.beaten && checkpoint !== null) {
+			this.opts = ["Continue", "Restart"]
+		} else if (progress.beaten && checkpoint === null) {
+			this.opts = ["Play Easy", "Play Hard"]
+		} else if (progress.beaten && checkpoint !== null) {
+			this.opts = ["Continue", "Restart Easy", "Restart Hard"]
+		}
+		this.opts.push("Settings", "Progress", "License")
 	},
 	resume: function () {
 		this.makeopts()
+		this.opt = this.opts[0]
 	},
 	think: function (dt) {
 		let kstate = UFX.key.state()
@@ -41,6 +51,20 @@ UFX.scenes.menu = {
 	},
 	select: function () {
 		switch (this.opt) {
+			case "Continue":
+				state.continuegame()
+				UFX.scene.push("play")
+				break
+			case "Play": case "Play Easy": case "Restart": case "Restart Easy":
+				state.miracle = true
+				state.startgame()
+				UFX.scene.push("play")
+				break
+			case "Play Hard": case "Restart Hard":
+				state.miracle = false
+				state.startgame()
+				UFX.scene.push("play")
+				break
 			case "Settings": UFX.scene.push("settings") ; break
 			case "Progress": UFX.scene.push("progress") ; break
 			case "License":
@@ -62,18 +86,20 @@ UFX.scenes.menu = {
 		this.drawline("The Final Choice", 160, 40, "white")
 		this.drawline("by Team Universe Factory", 124, 28, "yellow")
 		this.opts.forEach((opt, jopt) => {
-			let text = opt == this.opt ? "\u2022 " + opt + " \u2022" : opt
+			let text = opt
+			if (text == "Continue") text += " [Stage " + checkpoint.stage + "]"
+			text = opt == this.opt ? "\u2022 " + text + " \u2022" : text
 			let color = opt == this.opt ? "white" : "#AAA"
 			this.drawline(text, 60 - 40 * jopt, 32, color)
 		})
 		if (this.f < 1) {
 			this.drawline("Loading... " + (100 * this.f).toFixed(0) + "%", -120, 24, "gray")
 		}
-		if (this.opt == "Play Easy") {
+		if (this.opt == "Play Easy" || this.opt == "Restart Easy") {
 			let text = "In Easy mode, crew members you've rescued on previous playthroughs will be automatically rescued."
 			this.drawline(text, -210, 16, "gray")
 		}
-		if (this.opt == "Play Hard") {
+		if (this.opt == "Play Hard" || this.opt == "Restart Hard") {
 			let text = "In Hard mode, you must rescue all crew members in a single playthrough for the Good Ending."
 			this.drawline(text, -210, 16, "gray")
 		}
@@ -83,7 +109,7 @@ UFX.scenes.menu = {
 UFX.scenes.settings = {
 	start: function () {
 		this.opt = "Done"
-		this.opts = ["Layout", "Fullscreen", "Sound volume", "Music volume", "Voice volume", "Done"]
+		this.opts = ["Layout", "Fullscreen", "Auto-fire", "Sound volume", "Music volume", "Voice volume", "Done"]
 	},
 	think: function (dt) {
 		let kstate = UFX.key.state()
@@ -113,6 +139,9 @@ UFX.scenes.settings = {
 				settings.fullscreen = !settings.fullscreen
 				// TODO
 				break
+			case "Auto-fire":
+				settings.swapaction = !settings.swapaction
+				break
 			case "Sound volume":
 				settings.sfxvolume = alevel(settings.sfxvolume)
 				audio.setsfxvolume(settings.sfxvolume)
@@ -129,11 +158,13 @@ UFX.scenes.settings = {
 				UFX.scene.pop()
 				break
 		}
+		save.save()
 	},
 	getsetting: function (opt) {
 		switch (opt) {
 			case "Layout": return settings.portrait ? "Vertical" : "Horizontal"
 			case "Fullscreen": return settings.fullscreen ? "ON" : "OFF"
+			case "Auto-fire": return settings.swapaction ? "ON" : "OFF"
 			case "Sound volume": return (settings.sfxvolume * 100).toFixed() + "%"
 			case "Music volume": return (settings.musicvolume * 100).toFixed() + "%"
 			case "Voice volume": return (settings.dialogvolume * 100).toFixed() + "%"

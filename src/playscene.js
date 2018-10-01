@@ -6,20 +6,25 @@ UFX.scenes.play = {
 	start: function () {
 		state.clear()
 		state.restart()
-//		state.stage = stage
 		state.you = new You({ x: -300, y: 0 })
 		state.yous.push(state.you)
-//		makewaves()
+
+		this.makewaves()
 
 
 //		state.planets.push(new Capsule({ name: "1", x: 0, y: 0, vx: -20, vy: 0, }))
-		audio.playvoiceover("intro")
-		state.addduckwave(700, 500, 4, 4, [
-			[0, 350, 100],
-			[4, 200, -200],
-			[8, 0, 100],
-			[12, -600, 200],
-		])
+	},
+	makewaves: function () {
+		if (state.stage == 1) {
+			state.waves = [
+				[0, "addduckwave", 700, 500, 4, 4, [
+					[0, 350, 100],
+					[4, 200, -200],
+					[8, 0, 100],
+					[12, -600, 200],
+				]],
+			]
+		}
 	},
 	think: function (dt) {
 		// sound.mplay(2)
