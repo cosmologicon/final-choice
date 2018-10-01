@@ -4,11 +4,9 @@
 
 UFX.scenes.play = {
 	start: function () {
-		state.clear()
-		state.restart()
+		state.init()
 		state.you = new You({ x: -300, y: 0 })
 		state.yous.push(state.you)
-
 		this.makewaves()
 		audio.tofly()
 
@@ -33,6 +31,12 @@ UFX.scenes.play = {
 				[0, "addheronsplash", 2, 2],
 				[20, "addemu"],
 			]
+			state.waves = [
+				[0, "addheronsplash", 2, 2],
+//				[0, "addemu"],
+			]
+		} else {
+			state.waves = [[0, "addemu"]]
 		}
 	},
 	think: function (dt) {

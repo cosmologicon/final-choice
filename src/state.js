@@ -150,6 +150,14 @@ let state = {
 		this.saved = checkpoint.saved
 		this.apickup = checkpoint.apickup
 	},
+	recordprogress: function () {
+		for (let s in this.met) progress.met[s] = this.met[s]
+		for (let s in this.saved) progress.saved[s] = this.saved[s]
+		progress.bad |= this.bad
+		progress.good |= this.good()
+		progress.best |= this.best()
+		save.save()
+	},
 	// Call at the beginning of each stage.
 	init: function () {
 		this.you = null
@@ -281,7 +289,6 @@ let state = {
 
 	addwave: function (wave) {
 		let t = wave[0], func = wave[1], args = wave.slice(2)
-		console.log(wave)
 		this[func].apply(this, args)
 	},
 	playvo: function (name) {
@@ -345,7 +352,13 @@ let state = {
 	},
 
 	savedall: function () {
-		return "1234567X".split("").every(who => this.saved[who])
+		return "123456X".split("").every(who => this.saved[who])
+	},
+	good: function () {
+		return this.savedall()
+	},
+	best: function () {
+		return this.savedall() && this.saved.C
 	},
 	win: function () {
 		switch (this.stage) {

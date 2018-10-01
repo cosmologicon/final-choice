@@ -12,7 +12,7 @@ let save = {
 			progress: progress,
 			checkpoint: checkpoint,
 		}
-		localStorage[this.name] = obj
+		localStorage[this.name] = JSON.stringify(obj)
 	},
 	reset: function () {
 		delete localStorage[this.name]

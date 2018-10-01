@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>The Final Choice</title>
+<title>winscene test</title>
+<base href="..">
 <script src="../UFX/src/gl.js"></script>
 <script src="../UFX/src/gltext.js"></script>
 <script src="../UFX/src/maximize.js"></script>
@@ -17,8 +18,7 @@
 <script src="src/save.js"></script>
 <script src="src/state.js"></script>
 <script src="src/audio.js"></script>
-<script src="src/menuscene.js"></script>
-<script src="src/playscene.js"></script>
+<script src="src/winscene.js"></script>
 <script src="src/visitscene.js"></script>
 <script src="src/thing.js"></script>
 <script src="src/draw.js"></script>
@@ -29,9 +29,17 @@
 window.onerror = function (error, url, line) {
 	document.body.innerHTML = "<p>Error in: "+url+"<p>line "+line+"<pre>"+error+"</pre>"
 }
+settings.portrait = false
 draw.load()
 audio.init()
-UFX.scene.init({ ups: 60, maxfpu: 5 })
-UFX.scene.push("menu")
+UFX.resource.onload = () => {
+	state.startgame()
+	;"1234567XJC".split("").forEach(who => state.met[who] = true)
+	;"1234567XJC".split("").forEach(who => state.saved[who] = true)
+	draw.init()
+	audio.startgamemusic(0)
+	UFX.scene.init()
+	UFX.scene.push("win")
+}
 </script>
 

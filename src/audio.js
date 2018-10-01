@@ -10,7 +10,7 @@ let audio = {
 	// the quiet factor when a sound is played, the quieter the sound.
 	quiet: {},
 
-	tmusicfade: 2,
+	tmusicfade: 1,
 
 	// The gamma factor controls how the volume slider relates to the actual amplitude of the wave
 	// form. A gamma factor greater than 1 means you have finer control at low volumes, and a gamma

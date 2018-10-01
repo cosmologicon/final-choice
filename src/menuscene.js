@@ -2,6 +2,7 @@
 
 UFX.scenes.menu = {
 	start: function () {
+		save.load()
 		UFX.resource.onloading = this.onloading.bind(this)
 		UFX.resource.onload = this.onload.bind(this)
 		this.f = 0
