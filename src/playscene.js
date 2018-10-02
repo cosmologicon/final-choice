@@ -53,7 +53,8 @@ UFX.scenes.play = {
 				dy *= Math.SQRT1_2
 			}
 			state.you.move(dt, dx, dy)
-			if (kstate.pressed.action != settings.swapaction) {
+			console.log(kstate.pressed.action, settings.swapaction)
+			if (!!kstate.pressed.action == !!settings.swapaction) {
 				state.you.act()
 			}
 		}

@@ -103,6 +103,21 @@ let draw = {
 		})
 		gl.activeTexture(gl.TEXTURE1)
 		gl.bindTexture(gl.TEXTURE_2D, this.nebulatexture)
+
+		// Fullscreen polyfill
+		canvas.requestFullscreen = canvas.requestFullscreen
+			|| canvas.mozRequestFullScreen
+			|| canvas.webkitRequestFullScreen
+		document.exitFullscreen = document.exitFullscreen
+			|| document.webkitExitFullscreen
+			|| document.mozCancelFullScreen
+			|| document.msExitFullscreen
+		window.addEventListener("mozfullscreenchange", UFX.maximize.onfullscreenchange)
+		window.addEventListener("webkitfullscreenchange", UFX.maximize.onfullscreenchange)
+		UFX.maximize.getfullscreenelement = (() => document.fullscreenElement
+			|| document.mozFullScreenElement
+			|| document.webkitFullscreenElement
+			|| document.msFullscreenElement)
 	},
 	// Call after changing settings.portrait
 	setaspect: function () {
@@ -306,6 +321,56 @@ let draw = {
 				fontsize: T(12),  // TODO: make larger?
 			})
 		}
+	},
+	
+	// The next key press will result in fullscreen being requested.
+	readyfullscreen: function () {
+		document.addEventListener("keyup", draw.reqfs, { passive: false })
+	},
+	unreadyfullscreen: function () {
+		document.removeEventListener("keyup", draw.reqfs)
+		if (UFX.scene.top() === UFX.scenes.gofull) UFX.scene.pop()
+	},
+	reqfs: function (event) {
+		draw.unreadyfullscreen()
+		UFX.maximize.setoptions({ fullscreen: true })
+	},
+}
+
+// UFX.scene.push("gofull") will pause and give the player 5 seconds to confirm going fullscreen.
+UFX.scenes.gofull = {
+	start: function () {
+		if (UFX.maximize.getfullscreenelement() === canvas) {
+			UFX.maximize.setoptions({ fullscreen: false })
+			document.exitFullscreen()
+			UFX.scene.pop()
+			return
+		}
+		draw.readyfullscreen()
+		this.t = 0
+		this.paused = false
+	},
+	think: function (dt) {
+		this.t += dt
+		if (!this.paused && this.t > 0.4) {
+			this.paused = true
+		}
+		if (this.t > 5) draw.unreadyfullscreen()
+	},
+	draw: function () {
+		if (!this.paused) return
+		gl.clearColor(0.3, 0.3, 0.3, 1)
+		gl.clear(gl.COLOR_BUFFER_BIT)
+		gl.progs.text.use()
+		let text = "Press Space\nto enter\nfullscreen"
+		gl.progs.text.draw(text, {
+			centerx: draw.wV / 2,
+			centery: draw.hV / 2,
+			color: "white",
+			ocolor: "black",
+			fontname: "Bungee",
+			fontsize: 0.1 * draw.sV,
+		})
 	},
 }
 

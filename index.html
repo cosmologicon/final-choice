@@ -30,6 +30,7 @@ window.onerror = function (error, url, line) {
 	document.body.innerHTML = "<p>Error in: "+url+"<p>line "+line+"<pre>"+error+"</pre>"
 }
 save.load()
+settings.fullscreen = false
 draw.load()
 audio.init()
 UFX.scene.init({ ups: 60, maxfpu: 5 })

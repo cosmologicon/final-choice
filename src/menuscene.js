@@ -9,6 +9,13 @@ UFX.scenes.menu = {
 		this.opts0 = progress.beaten ? ["Settings", "Progress", "License"] : ["Settings", "License"]
 		this.opts = this.opts0
 		this.moved = false
+		
+		document.addEventListener("visibilitychange", () => {
+			if (document.hidden && UFX.scene.top() !== UFX.scenes.blur) {
+				UFX.scene.top().draw()
+				UFX.scene.ipush("blur")
+			}
+		}, false);
 	},
 	onloading: function (f, obj, objtype) {
 		this.f = f
@@ -87,10 +94,10 @@ UFX.scenes.menu = {
 		
 		gl.progs.text.use()
 		this.drawline("The Final Choice", 160, 40, "white")
-		this.drawline("by Team Universe Factory", 124, 28, "yellow")
+		this.drawline("by Team Universe Factory", 124, 25, "yellow")
 		this.opts.forEach((opt, jopt) => {
 			let text = opt
-			if (text == "Continue") text += " [Stage " + checkpoint.stage + "]"
+			if (text == "Continue") text += " [Stage " + (checkpoint ? checkpoint.stage : "???") + "]"
 			text = opt == this.opt ? "\u2022 " + text + " \u2022" : text
 			let color = opt == this.opt ? "white" : "#AAA"
 			this.drawline(text, 60 - 40 * jopt, 32, color)
@@ -140,6 +147,7 @@ UFX.scenes.settings = {
 				break
 			case "Fullscreen":
 				settings.fullscreen = !settings.fullscreen
+				UFX.scene.push("gofull")
 				// TODO
 				break
 			case "Auto-fire":
@@ -167,7 +175,7 @@ UFX.scenes.settings = {
 		switch (opt) {
 			case "Layout": return settings.portrait ? "Vertical" : "Horizontal"
 			case "Fullscreen": return settings.fullscreen ? "ON" : "OFF"
-			case "Auto-fire": return settings.swapaction ? "ON" : "OFF"
+			case "Auto-fire": return settings.swapaction ? "OFF" : "ON"
 			case "Sound volume": return (settings.sfxvolume * 100).toFixed() + "%"
 			case "Music volume": return (settings.musicvolume * 100).toFixed() + "%"
 			case "Voice volume": return (settings.dialogvolume * 100).toFixed() + "%"
@@ -294,5 +302,28 @@ UFX.scenes.pause = {
 			let color = opt == this.opt ? "white" : "#AAA"
 			UFX.scenes.menu.drawline(text, 60 - 40 * jopt, 32, color)
 		})
+	},
+}
+
+UFX.scenes.blur = {
+	start: function () {
+		draw.fill([0.2, 0.2, 0.2, 0.8])
+		this.audiostopped = audio.on
+		if (this.audiostopped) audio.suspend()
+		gl.progs.text.use()
+		gl.progs.text.draw("Press Space\nto resume", {
+			center: [draw.wV/2, draw.hV/2],
+			fontname: "Bungee", fontsize: T(50),
+			color: "white", ocolor: "black", owidth: 6,
+		})
+	},
+	think: function (dt) {
+		let kstate = UFX.key.state()
+		for (let d in kstate.down) {
+			if (kstate.down[d]) {
+				if (this.audiostopped) audio.resume()
+				UFX.scene.pop()
+			}
+		}
 	},
 }

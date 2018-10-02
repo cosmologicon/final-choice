@@ -18,3 +18,4 @@ function lprev(a, x) {
 	return a[Math.max(a.indexOf(x) - 1, 0)]
 }
 UFX.key.init()
+
