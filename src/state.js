@@ -189,6 +189,7 @@ let state = {
 		this.goodmissiles = []
 		this.pickups = []
 		this.planets = []
+		this.rocks = []
 		this.enemies = []
 		this.badbullets = []
 		this.bosses = []
@@ -205,14 +206,17 @@ let state = {
 	},
 	think: function (dt) {
 		let objs = this.yous.concat(this.goodbullets, this.goodmissiles, this.pickups, this.planets,
-			this.enemies, this.badbullets, this.bosses, this.spawners, this.corpses)
+			this.rocks, this.enemies, this.badbullets, this.bosses, this.spawners, this.corpses)
 		objs.forEach(obj => obj.think(dt))
 
 
-		;"yous goodbullets goodmissiles pickups enemies badbullets bosses planets spawners corpses".split(" ").forEach(gname => {
+		;"yous goodbullets goodmissiles pickups rocks enemies badbullets bosses planets spawners corpses".split(" ").forEach(gname => {
 			this[gname] = this[gname].filter(obj => obj.alive)
 		})
 
+		this.rocks.concat(this.enemies, this.bosses).forEach(obj => {
+			if (collided(obj, this.you)) obj.hit(this.you)
+		})
 		this.planets.forEach(obj => {
 			if (collided(obj, this.you)) obj.visit()
 		})
@@ -220,7 +224,7 @@ let state = {
 			if (collided(obj, this.you)) obj.collect()
 		})
 
-		objs = this.enemies.concat(this.bosses, this.planets)
+		objs = this.enemies.concat(this.rocks, this.bosses, this.planets)
 		getcollisions(this.goodbullets.concat(this.goodmissiles), objs).forEach(pair => {
 			let [b, e] = pair
 			b.hit(e)
@@ -262,7 +266,13 @@ let state = {
 			}
 		}
 	},
+	cheat: function () {
+		this.waves = []
+		this.bosses = []
+		this.spawners = []
+	},
 	draw: function () {
+		draw.rocks(this.rocks.map(rock => rock.rockdata()))
 		let sprites = this.yous.concat(this.enemies, this.bosses, this.goodmissiles, this.pickups, this.planets)
 		draw.sprites(sprites.map(sprite => sprite.spritedata()))
 		let bullets = this.goodbullets.concat(this.badbullets, this.corpses)
@@ -298,8 +308,24 @@ let state = {
 	playvo: function (name) {
 		audio.playvoiceover(name)
 	},
-	addformationwave: function (EType, x0, y0, nx, ny, steps) {
-		let r = 50
+
+	addcapsule: function (name, x, y, vx, vy) {
+		if (this.saved[name]) return
+		this.planets.push(new Capsule({ name: name, x: x, y: y, vx: vx, vy: vy, }))
+	},
+	addasteroids: function (n, x0, j0) {
+		j0 = j0 || 0
+		for (let j = j0 ; j < j0 + n ; ++j) {
+			let [dx, dy, dr, dvx] = randomrock[j]
+			let x = x0 + 200 * dx
+			let y = (dy * 2 - 1) * state.yrange
+			let r = Math.round((30 + 40 * dr) / 20) * 20
+			let vx = -20 - 40 * dvx
+			let vy = (dvx * 1000 % 1 * 2 - 1) * 2
+			this.rocks.push(new Rock({ x: x, y: y, vx: vx, vy: vy, r: r, hp: Math.floor(r * 0.7), }))
+		}
+	},
+	addformationwave: function (EType, r, x0, y0, nx, ny, steps) {
 		for (let jx = 0, j = 0 ; jx < nx ; ++jx) {
 			for (let jy = 0 ; jy < ny ; ++jy, ++j) {
 				let dx = (jx - (nx - 1) / 2) * r
@@ -313,7 +339,24 @@ let state = {
 		}
 	},
 	addduckwave: function (x0, y0, nx, ny, steps) {
-		this.addformationwave(Duck, x0, y0, nx, ny, steps)
+		this.addformationwave(Duck, 50, x0, y0, nx, ny, steps)
+	},
+	addturkeywave: function (x0, y0, nx, ny, steps) {
+		this.addformationwave(Turkey, 100, x0, y0, nx, ny, steps)
+	},
+	addlarkwave: function (n, x0, y0, vy0, dy0, cr) {
+		let dj = vy0 < 0 ? 20 : -20
+		for (let j = 0 ; j < n ; ++j) {
+			this.enemies.push(new Lark({ x0: x0, y0: y0, dy0: dy0 + dj * j, vy0: vy0, cr: cr, dydtheta: 50 }))
+		}
+	},
+	addclusterbombs: function (n, t, x0, y0, dx, dy, vx, vy) {
+		for (let j = 0 ; j < n ; ++j) {
+			let dt = j / n * t
+			let x = x0 + j * Math.phi % 1 * dx - vx * dt
+			let y = y0 + j * Math.phi % 1 * dy - vy * dt
+			this.badbullets.push(new BadClusterBullet({ x: x, y: y, vx: vx, vy: vy }))
+		}
 	},
 
 	addheronsplash(nx, ny, x0) {
@@ -332,8 +375,10 @@ let state = {
 	addemu: function () {
 		this.bosses.push(new Emu({ x: 600, y: 0, xtarget: 100 }))
 	},
-
-
+	addegret: function () {
+		let egret = new Egret({ x: 600, y: 0, xtarget0: 280 })
+		this.bosses.unshift(egret)
+	},
 
 	heal: function (amount) {
 		this.hp = Math.min(this.hp + amount, this.hp0)

@@ -3,14 +3,14 @@
 UFX.scenes.visit = {
 	start: function (name) {
 		this.name = "" + name
-		sound.dplay(vdata[this.name].sname + "1")
+		audio.playsfx(vdata[this.name].sname + "1")
 		this.t = 0
 		this.opt = 0
 		this.starting = true
 		this.popped = false
+		audio.tochoose()
 	},
 	think: function (dt) {
-		sound.mplay(1)
 		let kstate = UFX.key.state()
 		if (this.starting) {
 			this.t += dt
@@ -21,15 +21,15 @@ UFX.scenes.visit = {
 		if (this.starting && this.t > 1.5) {
 			if (this.opt == 0 && (kstate.down.right || kstate.down.down)) {
 				this.opt = 1
-				sound.playsfx("select")
+				audio.playsfx("select")
 			} else if (this.opt == 1 && (kstate.down.left || kstate.down.up)) {
 				this.opt = 0
-				sound.playsfx("select")
+				audio.playsfx("select")
 			}
 			if (kstate.down.action) {
 				this.starting = false
 				this.t = 1.5
-				sound.playsfx("start")
+				audio.playsfx("start")
 			}
 		}
 	},
@@ -37,15 +37,16 @@ UFX.scenes.visit = {
 		this.popped = true
 		if (this.opt == 0) {
 			state.downgrade(vdata[this.name].do)
-			sound.dplay(vdata[this.name].sname + "2")
+			audio.playsfx(vdata[this.name].sname + "2")
 			if (this.name == "7") {
 				;"123456X".forEach(who => { state.saved[who] = false })
 			} else {
 				state.saved[this.name] = true
 			}
 		} else {
-			sound.dplay(vdata[this.name].sname + "3")
+			audio.playsfx(vdata[this.name].sname + "3")
 		}
+		audio.tofly()
 		UFX.scene.pop()
 	},
 	draw: function () {

@@ -16,6 +16,7 @@
 <script src="src/settings.js"></script>
 <script src="src/save.js"></script>
 <script src="src/state.js"></script>
+<script src="src/randomrock.js"></script>
 <script src="src/audio.js"></script>
 <script src="src/menuscene.js"></script>
 <script src="src/playscene.js"></script>
@@ -31,6 +32,7 @@ window.onerror = function (error, url, line) {
 }
 save.load()
 settings.fullscreen = false
+checkpoint = { stage: 2, met: {}, saved: {}, downgrades: [], apickup: 0, }
 draw.load()
 audio.init()
 UFX.scene.init({ ups: 60, maxfpu: 5 })

@@ -9,6 +9,8 @@ let settings = {
 	dialogvolume: 0.6,
 	easy: true,
 }
+let DEBUG = window.location.href.includes("DEBUG")
+
 
 UFX.key.remaparrows(true)
 UFX.key.remap({

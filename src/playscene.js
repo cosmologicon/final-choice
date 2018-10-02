@@ -9,8 +9,6 @@ UFX.scenes.play = {
 		state.yous.push(state.you)
 		this.makewaves()
 		audio.tofly()
-
-//		state.planets.push(new Capsule({ name: "1", x: 0, y: 0, vx: -20, vy: 0, }))
 	},
 	makewaves: function () {
 		if (state.stage == 1) {
@@ -31,10 +29,43 @@ UFX.scenes.play = {
 				[0, "addheronsplash", 2, 2],
 				[20, "addemu"],
 			]
+		} else if (state.stage == 2) {
 			state.waves = [
-				[0, "addheronsplash", 2, 2],
-//				[0, "addemu"],
+				[0, "addcapsule", 1, 0, 0, -20, 0],
+				[40, "addcapsule", 2, 500, 100, -40, 0],
+				[80, "addcapsule", 3, 500, 0, -40, 6],
+
+				[0, "addheronsplash", 1, 4, 600],
+				[10, "addheronsplash", 1, 4, 600],
+				[30, "addturkeywave", 700, 0, 1, 8, [
+					[0, 250, 0],
+					[8, -700, 0],
+				]],
+				[30, "addturkeywave", 700, 0, 1, 8, [
+					[0, 350, 0],
+					[12, -700, 0],
+				]],
+				[30, "addturkeywave", 700, 0, 1, 8, [
+					[0, 450, 0],
+					[16, -700, 0],
+				]],
+				[30, "addlarkwave", 10, 200, 0, -100, 500, 200],
+				[40, "addlarkwave", 10, -100, 0, 100, -500, 200],
+
+				[30, "addasteroids", 60, 1400],
+
+				[60, "addclusterbombs", 20, 40, 0, 400, 600, 0, -60, -60],
+				[64, "addclusterbombs", 20, 40, 0, -400, 600, 0, -60, 60],
+
+				[96, "addlarkwave", 10, 200, 120, -100, 300, 200],
+				[102, "addlarkwave", 10, 200, -120, 100, -300, 200],
+				[100, "addlarkwave", 10, -100, 120, -100, 300, 200],
+				[98, "addlarkwave", 10, -100, -120, 100, -300, 200],
+
+				[100, "addegret"],
 			]
+		
+		
 		} else {
 			state.waves = [[0, "addemu"]]
 		}
@@ -42,6 +73,7 @@ UFX.scenes.play = {
 	think: function (dt) {
 		// sound.mplay(2)
 		let kstate = UFX.key.state()
+		if (DEBUG && kstate.pressed.F1) dt *= 20
 		if (kstate.down.quit) UFX.scene.push("pause")
 		if (kstate.down.swap) settings.swapaction = !settings.swapaction
 		if (state.you.alive) {
@@ -53,12 +85,12 @@ UFX.scenes.play = {
 				dy *= Math.SQRT1_2
 			}
 			state.you.move(dt, dx, dy)
-			console.log(kstate.pressed.action, settings.swapaction)
 			if (!!kstate.pressed.action == !!settings.swapaction) {
 				state.you.act()
 			}
 		}
-		// view.think(dt)
+		if (kstate.down.F2) state.heal(1000)
+		if (kstate.down.F3) state.cheat()
 		state.think(dt)
 		audio.think(dt)
 	},

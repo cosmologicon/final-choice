@@ -158,6 +158,40 @@ const SeeksHorizontalPosition = {
 		}
 	},
 }
+const SeeksHorizontalSinusoid = {
+	init: function (vxmax0, xaccel0, xomega, xr) {
+		this.vxmax0 = vxmax0
+		this.xaccel0 = xaccel0
+		this.xomega = xomega
+		this.xr = xr
+	},
+	start: function () {
+		this.vx0 = 0
+		this.x0 = null
+		this.xtarget0 = null
+		this.xtheta = 0
+	},
+	think: function (dt) {
+		if (this.x0 === null) this.x0 = this.x
+		if (this.xtarget0 !== null) {
+			this.vx0 = Math.abs(this.vx0)
+			this.vx0 = Math.min(this.vx0 + dt * this.xaccel0, this.vxmax0)
+			let dx = Math.abs(this.xtarget0 - this.x0)
+			let v = dx < 0.01 ? 100 : Math.min(this.vx0, Math.sqrt(2 * 2 * this.xaccel0 * dx) + 1)
+			if (v * dt >= dx) {
+				this.x0 = this.xtarget0
+				this.xtarget0 = null
+				this.vx0 = 0
+			} else {
+				this.vx0 = this.xtarget0 > this.x0 ? v : -v
+				this.x0 += this.vx0 * dt
+			}
+		}
+		this.xtheta += this.xomega * dt
+		this.x = this.x0 + this.xr * Math.sin(this.xtheta)
+		this.vx = this.vx0 + this.xr * this.xomega * Math.cos(this.xtheta)
+	},
+}
 
 const VerticalSinusoid = {
 	init: function (yomega, yrange, y0) {
@@ -172,6 +206,23 @@ const VerticalSinusoid = {
 		this.ytheta += dt * this.yomega
 		this.y = this.y0 + this.yrange * Math.sin(this.ytheta)
 		this.vy = this.yrange * this.yomega * Math.cos(this.ytheta)
+	},
+}
+
+
+const Cycloid = {
+	think: function (dt) {
+		let dy = this.dy0 + this.vy0 * this.t
+		let yc = this.y0 + dy
+		let dycdt = this.vy0
+		let xc = this.x0
+		let theta = Math.tau / 2 + dy / this.dydtheta
+		let dthetadt = this.vy0 / this.dydtheta
+		let S = Math.sin(theta), C = Math.cos(theta)
+		this.x = xc + C * this.cr
+		this.y = yc + S * this.cr
+		this.vx = -S * dthetadt * this.cr
+		this.vy = dycdt + C * dthetadt * this.cr
 	},
 }
 
@@ -346,7 +397,21 @@ const BossBound = {
 		}
 	},
 }
-
+const EncirclesBoss = {
+	start: function () {
+		this.vx = 0
+		this.vy = 0
+	},
+	think: function (dt) {
+		if (!this.alive || !this.target.alive) return
+		this.theta += this.omega * dt
+		let S = Math.sin(this.theta), C = Math.cos(this.theta)
+		this.x = this.target.x + this.R * C
+		this.y = this.target.y + this.R * -S
+		this.vx = S * this.R * this.omega
+		this.vy = -C * this.R * this.omega
+	},
+}
 const ABBullets = {
 	init: function (nbullet, dtbullet) {
 		this.nbullet = nbullet
@@ -480,6 +545,54 @@ const ClustersNearYou = {
 	},
 }
 
+const SpawnsHerons = {
+	init: function (dtheron) {
+		this.dtheron = dtheron
+	},
+	start: function () {
+		this.theron = 0
+		this.jheron = 0
+	},
+	think: function (dt) {
+		for (this.theron += dt ; this.theron >= this.dtheron ; this.theron -= this.dtheron, ++this.jheron) {
+			state.enemies.push(new Heron({ x: 600, y: this.y, vx: -60, vy: 0, target: this }))
+		}
+	},
+}
+
+const SpawnsSwallows = {
+	init: function (nswallow) {
+		this.nswallow = nswallow
+	},
+	start: function () {
+		this.tshake = 0
+		this.swallows = []
+		for (let jswallow = 0 ; jswallow < this.nswallow ; ++jswallow) {
+			let theta = jswallow * Math.tau / this.nswallow
+			let swallow = new Swallow({ target: this, omega: 1, R: this.r, theta: theta })
+			this.swallows.push(swallow)
+			state.bosses.push(swallow)  // Was enemies
+		}
+	},
+	think: function (dt) {
+		if (this.tshake) {
+			this.tshake = Math.max(this.tshake - dt, 0)
+			if (this.tshake == 0) {
+				this.xomega /= 3
+				this.yomega /= 3
+				if (!this.swallows.length) this.die()
+			}
+		} else if (this.swallows.some(s => !s.alive)) {
+			this.tshake = 1.5
+			this.xomega *= 5
+			this.yomega *= 5
+			this.swallows = this.swallows.filter(s => s.alive)
+			this.swallows.forEach(s => s.omega *= 1.4)
+		}
+	},
+}
+
+
 // DISPLAY
 
 const DrawGlow = {
@@ -520,6 +633,12 @@ const LeavesCorpse = {
 	die: function () {
 		state.corpses.push(new Corpse({ x: this.x, y: this.y, r: this.r, }))
 	},
+}
+
+function iflashcolor(iflash) {
+	if (iflash <= 0) return null
+	let a = Math.sqrt(iflash) * 12
+	return [null, [1, 0.2, 0.2], null, [1, 0.7, 0.2]][Math.floor(a) % 4]
 }
 
 const DrawAngleImage = {
@@ -568,6 +687,29 @@ const DrawFacingImage = {
 		}
 	},
 }
+
+const DrawTumblingRock = {
+	init: function (color0) {
+		this.color0 = color0 || [1, 1, 1]
+	},
+	start: function () {
+		this.iflash = 0
+		this.rtheta = UFX.random()
+		this.romega = UFX.random.choice([-1, 1]) * UFX.random(0.08, 0.25)
+	},
+	think: function (dt) {
+		this.iflash = Math.max(this.iflash - dt, 0)
+		this.rtheta += this.romega * dt
+	},
+	rockdata: function () {
+		let scale = 0.01 * this.r * 0.39 * 4  // ???
+		let color = iflashcolor(this.iflash) || this.color0
+		return { x: this.x, y: this.y, r: this.r, T: this.rtheta % 1, color: color }
+		
+		// angle 50
+	},
+}
+
 
 // PLAYER CONTROL
 
@@ -862,6 +1004,22 @@ Duck.prototype = UFX.Thing()
 	.addcomp(KnocksOnCollision, 40)
 	.addcomp(LeavesCorpse)
 	.addcomp(DrawFacingImage, "duck", 1.8, -100)
+function Turkey(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+Turkey.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(HasHealth, 20)
+	.addcomp(LetPickup, 3)
+	.addcomp(Collides, 40)
+	.addcomp(SeeksFormation, 400, 400)
+	.addcomp(DisappearsOffscreen)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(KnocksOnCollision, 40)
+	.addcomp(LeavesCorpse)
+	.addcomp(DrawFacingImage, "duck", 1.8, -100)
 
 function Heron(obj) {
 	this.start()
@@ -882,6 +1040,24 @@ Heron.prototype = UFX.Thing()
 	.addcomp(Tumbles, 2)
 	.addcomp(DrawAngleImage, "heron", 1.5)
 	.addcomp(LeavesCorpse)
+function Lark(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+	this.think(0)
+}
+Lark.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(HasHealth, 4)
+	.addcomp(LetPickup, 2)
+	.addcomp(Collides, 20)
+	.addcomp(Cycloid)
+	.addcomp(DisappearsOffscreen, 1000)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(KnocksOnCollision, 40)
+	.addcomp(DrawFacingImage, "canary", 1.7)
+	.addcomp(LeavesCorpse)
+
 
 function Emu(obj) {
 	this.start()
@@ -902,8 +1078,59 @@ Emu.prototype = UFX.Thing()
 	.addcomp(DrawAngleImage, "heron", 1.5)
 	.addcomp(LeavesCorpse)
 
+function Egret(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+	this.theta = 0
+}
+Egret.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(InfiniteHealth)
+	.addcomp(Collides, 80)
+	//.addcomp(RoundhouseBullets)
+	.addcomp(SeeksHorizontalSinusoid, 30, 30, 0.8, 100)
+	.addcomp(VerticalSinusoid, 0.6, 120)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(KnocksOnCollision, 40)
+	.addcomp(SpawnsSwallows, 6)
+	.addcomp(SpawnsHerons, 3)
+	.addcomp(SpawnsClusterBullets, 2)
+	.addcomp(DrawAngleImage, "egret", 1.5)
+	.addcomp(LeavesCorpse)
+function Swallow(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+Swallow.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(BossBound)
+	.addcomp(EncirclesBoss)
+	.addcomp(Lives)
+	.addcomp(HasHealth, 20)
+	.addcomp(Collides, 30)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(KnocksOnCollision, 40)
+	.addcomp(DrawAngleImage, "swallow", 1.3)
+	.addcomp(LeavesCorpse)
 
-
+function Rock(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+	this.iflashmax = 0.3
+}
+Rock.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(LinearMotion)
+	.addcomp(HasHealth, 3)
+	.addcomp(LetPickup, 2)
+	.addcomp(Collides, 20)
+	.addcomp(DisappearsOffscreen)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(KnocksOnCollision, 40)
+	.addcomp(DrawTumblingRock)
+	.addcomp(LeavesCorpse)
 function Corpse(obj) {
 	this.start()
 	for (let s in obj) this[s] = obj[s]

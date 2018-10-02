@@ -215,18 +215,21 @@ let draw = {
 	},
 
 	rocks: function (rockdata) {
-		let data = builddata(rockdata, rock => [rock.x, rock.y, rock.r, rock.T, 1, 0, 0])
+		let data = builddata(rockdata, rock => [rock.x, rock.y, rock.r, rock.T].concat(rock.color))
 		if (!data.length) return
 		gl.progs.rock.use()
+		gl.activeTexture(gl.TEXTURE2)
+		gl.bindTexture(gl.TEXTURE_2D, this.rocktexture)
 		gl.progs.rock.set({
-			screen: [this.wV, this.hV],
+			screensizeV: [this.wV, this.hV],
 			texture: 2,
+			y0G: state.y0,
 		})
 		gl.makeArrayBuffer(data).bind()
 		gl.progs.rock.assignAttribOffsets({
 			pU: 0,
-			center: 2,
-			r: 4,
+			pG0: 2,
+			GscaleU: 4,
 			T: 5,
 			color: 6,
 		})
@@ -512,20 +515,33 @@ void main() {
 `
 
 shaders.rock.vert = `
-attribute vec2 pU;
-attribute vec2 center;
-attribute float r;
+attribute vec2 pU;  // Unit coordinates
+attribute vec2 pG0;  // Position in game coordinates
+attribute float GscaleU;
 attribute float T;
 attribute vec3 color;
-uniform vec2 screen;
+uniform vec2 screensizeV;
+uniform float y0G;  // Game coordinate at the halfway point (vertical in landscape)
 varying vec2 pT0, pT1;
 varying float aT;
 varying vec3 tcolor;
+
+const vec2 PscaleG = vec2(1.0 / 427.0, 1.0 / 240.0);
 void main() {
-	vec2 p = (pU * r + center) / screen;
+	// Landscape mode by default
+	vec2 pG = pG0 + GscaleU * pU;
+	// This combines two transforms. First apply the y0 offset. Second, account for the fact that
+	// +yG is down while +yP is up.
+	pG.y = y0G - pG.y;
+	vec2 pP = PscaleG * pG;
+	// Transform to portrait mode
+	if (screensizeV.y > screensizeV.x) {
+		pP = vec2(-pP.y, pP.x);
+	}
+	gl_Position = vec4(pP, 0.0, 1.0);
+
 	pT0 = -pU * 0.5 + 0.5;
-	gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
-	if (screen.x > screen.y) pT0.xy = pT0.yx;
+//	if (screen.x > screen.y) pT0.xy = pT0.yx;
 	float a = mod(T * 60.0, 60.0);
 	aT = fract(a);
 	a = floor(a);
