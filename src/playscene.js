@@ -42,6 +42,7 @@ UFX.scenes.play = {
 	think: function (dt) {
 		// sound.mplay(2)
 		let kstate = UFX.key.state()
+		if (kstate.down.quit) UFX.scene.push("pause")
 		if (kstate.down.swap) settings.swapaction = !settings.swapaction
 		if (state.you.alive) {
 			let dx = (kstate.pressed.right ? 1 : 0) - (kstate.pressed.left ? 1 : 0)

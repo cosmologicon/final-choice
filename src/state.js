@@ -47,7 +47,11 @@ let progress = {
 	best: false,
 }
 let checkpoint = null  // null = no checkpoint data.
-
+let progress0 = JSON.parse(JSON.stringify(progress))
+function resetprogress() {
+	progress = JSON.parse(JSON.stringify(progress0))
+	save.save()
+}
 
 let state = {
 

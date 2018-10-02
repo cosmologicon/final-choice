@@ -2,12 +2,12 @@
 
 UFX.scenes.menu = {
 	start: function () {
-		save.load()
 		UFX.resource.onloading = this.onloading.bind(this)
 		UFX.resource.onload = this.onload.bind(this)
 		this.f = 0
 		this.opt = "Settings"
-		this.opts = ["Settings", "Progress", "License"]
+		this.opts0 = progress.beaten ? ["Settings", "Progress", "License"] : ["Settings", "License"]
+		this.opts = this.opts0
 		this.moved = false
 	},
 	onloading: function (f, obj, objtype) {
@@ -17,7 +17,7 @@ UFX.scenes.menu = {
 	onload: function () {
 		draw.init()
 		this.makeopts()
-		if (!this.moved) this.opt = this.opts[0]
+		// if (!this.moved) this.opt = this.opts[0]
 		audio.startgamemusic(0)
 	},
 	makeopts: function () {
@@ -30,9 +30,10 @@ UFX.scenes.menu = {
 		} else if (progress.beaten && checkpoint !== null) {
 			this.opts = ["Continue", "Restart Easy", "Restart Hard"]
 		}
-		this.opts.push("Settings", "Progress", "License")
+		this.opts = this.opts.concat(this.opts0)
 	},
 	resume: function () {
+		audio.tochoose(0)
 		this.makeopts()
 		this.opt = this.opts[0]
 	},
@@ -181,8 +182,117 @@ UFX.scenes.settings = {
 			if (text != "Done") text += ": " + this.getsetting(opt)
 			if (opt == this.opt) text = "\u2022 " + text + " \u2022"
 			let color = opt == this.opt ? "white" : "#AAA"
+			UFX.scenes.menu.drawline(text, 160 - 40 * jopt, 32, color)
+		})
+	},
+}
+
+UFX.scenes.progress = {
+	start: function () {
+		this.t = 0
+		this.opt = "Back"
+		this.opts = ["Reset progress", "Back"]
+	},
+	think: function (dt) {
+		this.t += dt
+		let kstate = UFX.key.state()
+		if (kstate.down.down || kstate.down.right) {
+			this.opt = lnext(this.opts, this.opt)
+		}
+		if (kstate.down.up || kstate.down.left) {
+			this.opt = lprev(this.opts, this.opt)
+		}
+		if (kstate.down.action) this.select()
+	},
+	select: function () {
+		switch (this.opt) {
+			case "Reset progress":
+				resetprogress()
+				break
+			case "Back":
+				UFX.scene.pop()
+				break
+		}
+	},
+	draw: function () {
+		draw.clear()
+		draw.startalk()
+		gl.progs.text.use()
+		let text = "Hawking crew members who have been rescued on previous complete playthroughs. When playing the game on Easy mode, these crew members will not need to be rescued again."
+		gl.progs.text.draw(text, {
+			midbottom: yswap(settings.portrait ? T(240, 280) : T(427, 140)),
+			fontname: "Bungee", fontsize: T(22), color: "#BFF",
+			width: T(settings.portrait ? 400 : 700),
+		})
+		;"123456X".split("").forEach((name, j) => {
+			let dx = 320/3 * (j % 4) + 320/6 * (j >= 4), dy = 100 * Math.floor(j / 4)
+			let pos = yswap(settings.portrait ? T(76 + dx, 400 + dy) : T(264 + dx, 220 + dy))
+			let a = Math.clamp((this.t - 2) * 2, 0, (progress.met[name] ? 1 : 0.99))
+			if (a) draw.avatar(name, pos, T(60), a, true)
+			let alpha = Math.clamp((this.t - 3) * 2, 0, 1)
+			if (alpha == 0) {
+			} else if (!progress.met[name]) {
+				gl.progs.text.use()
+				gl.progs.text.draw(" ? ", { center: pos, fontsize: T(50), fontname: "Permanent Marker",
+					color: "red", ocolor: "black", alpha: alpha, })
+			} else if (!progress.saved[name]) {
+				gl.progs.text.use()
+				gl.progs.text.draw(" X ", { center: pos, fontsize: T(50), fontname: "Permanent Marker",
+					color: "red", ocolor: "black", alpha: alpha, })
+			}
+		})
+		gl.progs.text.use()
+		this.opts.forEach((opt, jopt) => {
+			let text = opt
+			if (opt == this.opt) text = "\u2022 " + text + " \u2022"
+			let color = opt == this.opt ? "white" : "#AAA"
+			UFX.scenes.menu.drawline(text, -170 - 40 * jopt, 32, color)
+		})
+	},
+}
+
+
+UFX.scenes.pause = {
+	start: function () {
+		audio.suspend()
+		this.opt = "Resume"
+		this.opts = ["Settings", "Quit to Menu", "Resume"]
+	},
+	stop: function () {
+		audio.resume()
+	},
+	think: function (dt) {
+		let kstate = UFX.key.state()
+		if (kstate.down.down || kstate.down.right) {
+			this.opt = lnext(this.opts, this.opt)
+		}
+		if (kstate.down.up || kstate.down.left) {
+			this.opt = lprev(this.opts, this.opt)
+		}
+		if (kstate.down.action) this.select()
+	},
+	select: function () {
+		switch (this.opt) {
+			case "Settings":
+				UFX.scene.push("settings")
+				break
+			case "Quit to Menu":
+				UFX.scene.pop()
+				UFX.scene.pop()
+				break
+			case "Resume":
+				UFX.scene.pop()
+				break
+		}
+	},
+	draw: function () {
+		draw.clear()
+		gl.progs.text.use()
+		this.opts.forEach((opt, jopt) => {
+			let text = opt
+			if (opt == this.opt) text = "\u2022 " + text + " \u2022"
+			let color = opt == this.opt ? "white" : "#AAA"
 			UFX.scenes.menu.drawline(text, 60 - 40 * jopt, 32, color)
 		})
 	},
-
 }

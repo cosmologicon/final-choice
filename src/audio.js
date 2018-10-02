@@ -118,15 +118,17 @@ let audio = {
 		UFX.audio.setgain("musicfade", 0)
 		UFX.audio.setgain("musicfade", 1, { fade: 5, })
 	},
-	tofly: function () {
+	tofly: function (dt) {
 		if (!UFX.audio.context) return
-		UFX.audio.setgain("fly_gain", 1, {fade: this.tmusicfade})
-		UFX.audio.setgain("choose_gain", 0, {fade: this.tmusicfade})
+		if (dt === undefined) dt = this.tmusicfade
+		UFX.audio.setgain("fly_gain", 1, {fade: dt})
+		UFX.audio.setgain("choose_gain", 0, {fade: dt})
 	},
-	tochoose: function () {
+	tochoose: function (dt) {
 		if (!UFX.audio.context) return
-		UFX.audio.setgain("fly_gain", 0, {fade: this.tmusicfade})
-		UFX.audio.setgain("choose_gain", 1, {fade: this.tmusicfade})
+		if (dt === undefined) dt = this.tmusicfade
+		UFX.audio.setgain("fly_gain", 0, {fade: dt})
+		UFX.audio.setgain("choose_gain", 1, {fade: dt})
 	},
 	setsfxvolume: function (volume) {
 		if (!UFX.audio.context) return

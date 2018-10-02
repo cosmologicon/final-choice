@@ -12,8 +12,8 @@ let settings = {
 
 UFX.key.remaparrows(true)
 UFX.key.remap({
-	space: "action", enter: "action", ctrl: "action", shift: "action", Z: "action",
+	space: "action", enter: "action", Z: "action", // ctrl: "action", shift: "action",
 	tab: "swap", caps: "swap",
-	esc: "quit",
+	esc: "quit", Q: "quit", P: "quit",
 	// TODO: portrait, toggledebug, fullscreen
 })
