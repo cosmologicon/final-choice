@@ -26,7 +26,7 @@ function addpU(data, vals) {
 }
 function builddata(objs, fvals) {
 	let data = []
-	objs.forEach(obj => data = addpU(data, fvals(obj)))
+	objs.forEach((obj, j) => data = addpU(data, fvals(obj, j)))
 	data.nvert = 6 * objs.length
 	return data
 }
@@ -248,6 +248,36 @@ let draw = {
 			screensizeV: [this.wV, this.hV],
 			texture: 3,
 			y0G: state.y0,
+		})
+		gl.makeArrayBuffer(data).bind()
+		gl.progs.sprite.assignAttribOffsets({
+			pU: 0,
+			pG0: 2,
+			pT0: 4,
+			TscaleU: 6,
+			scale: 8,
+			A: 9,
+			color: 10,
+		})
+		gl.drawArrays(gl.TRIANGLES, 0, data.nvert)
+	},
+
+	health: function (imgnames) {
+		let [x0, y0] = settings.portrait ? [402, -220] : [-407, -215]
+		let [dx, dy] = settings.portrait ? [0, 20] : [20, 0]
+		let A = settings.portrait ? Math.tau / 4 : 0
+		let data = builddata(imgnames, (imgname, j) => {
+			let [tx, ty, tw, th] = Tdata[imgname]
+			return [x0 + dx * j, y0 + dy * j, tx, ty, tw, th, 0.3, A, 1, 1, 1]
+		})
+		if (!data.length) return
+		gl.progs.sprite.use()
+		gl.activeTexture(gl.TEXTURE3)
+		gl.bindTexture(gl.TEXTURE_2D, this.spritetexture)
+		gl.progs.sprite.set({
+			screensizeV: [this.wV, this.hV],
+			texture: 3,
+			y0G: 0,
 		})
 		gl.makeArrayBuffer(data).bind()
 		gl.progs.sprite.assignAttribOffsets({
@@ -527,9 +557,11 @@ varying float aT;
 varying vec3 tcolor;
 
 const vec2 PscaleG = vec2(1.0 / 427.0, 1.0 / 240.0);
+const float A = -2.6;
+const mat2 R = mat2(cos(A), -sin(A), sin(A), cos(A));
 void main() {
 	// Landscape mode by default
-	vec2 pG = pG0 + GscaleU * pU;
+	vec2 pG = pG0 + R * (GscaleU * pU);
 	// This combines two transforms. First apply the y0 offset. Second, account for the fact that
 	// +yG is down while +yP is up.
 	pG.y = y0G - pG.y;

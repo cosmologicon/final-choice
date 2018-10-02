@@ -102,7 +102,7 @@ UFX.scenes.play = {
 			draw.starfly()
 		}
 		state.draw()
-		// hud.draw()
+		this.drawhud()
 		voplayer.draw()
 		if (state.tlose) {
 			let alpha = Math.clamp(state.tlose - 2, 0, 1)
@@ -111,6 +111,17 @@ UFX.scenes.play = {
 			let alpha = Math.clamp(state.twin - 2, 0, 1)
 			draw.fill([0.8, 0.8, 1, alpha])
 		}
+	},
+	drawhud: function () {
+		let imgnames = []
+		for (let jhp = 0 ; jhp < state.hp0 ; ++jhp) {
+			imgnames.push(jhp < state.hp ? "health" : "health0")
+		}
+		for (let jhp = 0 ; jhp < state.shieldhp0 ; ++jhp) {
+			let a = Math.clamp(state.shieldhp - jhp, 0, 1)
+			imgnames.push(a == 1 || a * 20 % 2 > 1 ? "shield" : "health0")
+		}
+		draw.health(imgnames)
 	},
 }
 

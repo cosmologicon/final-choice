@@ -205,6 +205,8 @@ let state = {
 		this.xoffset = 0
 	},
 	think: function (dt) {
+		this.shieldhp = Math.min(this.shieldhp + this.shieldrate * dt, this.shieldhp0)
+
 		let objs = this.yous.concat(this.goodbullets, this.goodmissiles, this.pickups, this.planets,
 			this.rocks, this.enemies, this.badbullets, this.bosses, this.spawners, this.corpses)
 		objs.forEach(obj => obj.think(dt))
