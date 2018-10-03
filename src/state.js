@@ -333,6 +333,9 @@ let state = {
 		if (this.saved.X) return
 		this.rocks.push(new BlueRock({ x: x, y: y, vx: vx, vy: vy }))
 	},
+	addgabriel: function () {
+		if (this.downgrades.length) this.planets.push(new Gabriel({ x: 500, y: 500 }))
+	},
 
 	addformationwave: function (EType, r, x0, y0, nx, ny, steps) {
 		for (let jx = 0, j = 0 ; jx < nx ; ++jx) {
@@ -414,6 +417,9 @@ let state = {
 				)
 			}
 		}
+	},
+	addhawk: function () {
+		this.bosses.push(new Hawk({ x: 600, y: 0, xtarget: 200 }))
 	},
 
 	heal: function (amount) {

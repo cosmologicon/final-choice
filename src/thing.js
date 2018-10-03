@@ -129,6 +129,17 @@ const SeeksEnemies = {
 	},
 }
 
+const SeeksYou = {
+	init: function (v0) {
+		this.v0 = v0 || 200
+	},
+	think: function (dt) {
+		let target = state.you
+		let [ax, ay] = Math.norm([target.x - this.x, target.y - this.y], 2000)
+		;[this.vx, this.vy] = Math.norm([this.vx + dt * ax, this.vy + dt * ay], this.v0)
+	},
+}
+
 const SeeksHorizontalPosition = {
 	init: function (vxmax, accel) {
 		this.vxmax = vxmax
@@ -496,6 +507,28 @@ const RoundhouseBullets = {
 	},
 }
 
+const ShootsAtYou = {
+	init: function (dtbullet) {
+		this.dtbullet = dtbullet || 4
+	},
+	start: function () {
+		this.tbullet = 0
+		this.nbullet = 20
+		this.vbullet = 150
+		this.jbullet = 0
+	},
+	think: function (dt) {
+		for (this.tbullet += dt ; this.tbullet >= this.dtbullet ; this.tbullet -= this.dtbullet, ++this.jbullet) {
+			let [dx, dy] = Math.norm([state.you.x - this.x, state.you.y - this.y])
+			let r = this.r + 2
+			state.badbullets.push(new BadBullet({
+				x: this.x + r * dx, y: this.y + r * dy,
+				vx: this.vbullet * dx, vy: this.vbullet * dy,
+			}))
+		}
+	},
+}
+
 const SpawnsClusterBullets = {
 	init: function (dtcb) {
 		this.dtcb = dtcb
@@ -648,6 +681,35 @@ const SpawnsCobras = {
 			r *= 0.95
 		}
 		this.jcobra += 1
+	},
+}
+
+const SpawnsCanaries = {
+	init: function (ncanary) {
+		this.ncanary = this.ncanary || 6
+	},
+	start: function () {
+		let dt0 = 0
+		this.canaries = []
+		for (let jcanary = 0 ; jcanary < this.ncanary ; ++jcanary) {
+			let theta = jcanary * Math.tau / this.ncanary
+			let omega = 1.5
+			for (let r = 2 ; r < 5 ; ++r) {
+				let canary = new Canary({ target: this, omega: omega, R: r * this.r, theta: theta, tbullet: dt0 * 4 })
+				this.canaries.push(canary)
+				state.enemies.push(canary)
+				theta += Math.phi * Math.tau
+				omega /= -1.5
+			}
+			dt0 = (dt0 + Math.phi) % 1
+		}
+	},
+	think: function (dt) {
+		if (this.canaries.some(s => !s.alive)) {
+			this.yomega *= 1.2
+			this.canaries = this.canaries.filter(s => s.alive)
+			this.canaries.forEach(s => s.omega *= 1.1)
+		}
 	},
 }
 
@@ -1227,6 +1289,44 @@ Asp.prototype = UFX.Thing()
 	.addcomp(KnocksOnCollision, 40)
 	.addcomp(DrawFacingImage, "snake", 1.2, 0)
 	.addcomp(LeavesCorpse)
+function Hawk(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+Hawk.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(HasHealth, 40)
+	.addcomp(Collides, 60)
+	.addcomp(RoundhouseBullets, 0.5)
+	.addcomp(SeeksHorizontalPosition, 30, 30)
+	.addcomp(VerticalSinusoid, 0.4, 100)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(KnocksOnCollision, 40)
+	.addcomp(SpawnsCobras, 15)
+	.addcomp(SpawnsCanaries)
+	.addcomp(SpawnsHerons, 8)
+	.addcomp(SpawnsClusterBullets, 4)
+	.addcomp(Tumbles, 0.5)
+	.addcomp(DrawAngleImage, "hawk", 1.1)
+	.addcomp(LeavesCorpse)
+function Canary(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+Canary.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(BossBound)
+	.addcomp(EncirclesBoss)
+	.addcomp(Lives)
+	.addcomp(HasHealth, 20)
+	.addcomp(Collides, 30)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(KnocksOnCollision, 40)
+	.addcomp(DrawFacingImage, "canary", 1.7)
+	.addcomp(ShootsAtYou)
+	.addcomp(LeavesCorpse)
+
 
 function Rock(obj) {
 	this.start()
@@ -1262,6 +1362,23 @@ BlueRock.prototype = UFX.Thing()
 	.addcomp(SpawnsCapsule)
 	.addcomp(DrawTumblingRock, [0.8, 0.8, 1.0])
 	.addcomp(LeavesCorpse)
+function Gabriel(obj) {
+	this.start()
+	this.vx = -state.scrollspeed
+	this.vy = 0
+	this.name = "7"
+	for (let s in obj) this[s] = obj[s]
+}
+Gabriel.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(Collides, 50)
+	.addcomp(LinearMotion)
+	.addcomp(SeeksYou, 220)
+	.addcomp(InfiniteHealth)
+	.addcomp(DrawFacingImage, "gabriel", 0.6)
+	.addcomp(Visitable, false)
+
 
 function Corpse(obj) {
 	this.start()

@@ -105,6 +105,12 @@ UFX.scenes.play = {
 
 				[105, "addmedusa"],
 			]
+		} else if (state.stage == 4) {
+			state.waves = [
+				[0, "addgabriel"],
+				[6, "playvo", "A"],
+				[6, "addhawk"],
+			]
 		} else {
 			state.waves = [[0, "addemu"]]
 		}
