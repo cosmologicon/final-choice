@@ -184,6 +184,13 @@ let voplayer = {
 		this.alpha = 0
 		this.advance()
 	},
+	stop: function () {
+		if (this.node) this.node.cleanup()
+		this.node = null
+		this.queue = []
+		this.current = null
+		this.alpha = 0
+	},
 	think: function (dt) {
 		if (this.done()) return
 		this.tcurrent = Math.max(this.tcurrent - dt, 0)

@@ -34,12 +34,13 @@ draw.load()
 audio.init()
 UFX.resource.onload = () => {
 	state.startgame()
+	state.miracle = false
 	;"1234567XJC".split("").forEach(who => state.met[who] = true)
 	;"1234567XJC".split("").forEach(who => state.saved[who] = true)
 	draw.init()
 	audio.startgamemusic(0)
 	UFX.scene.init()
-	UFX.scene.push("win")
+	UFX.scene.push("climax")
 }
 </script>
 

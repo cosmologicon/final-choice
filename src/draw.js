@@ -175,13 +175,14 @@ let draw = {
 		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
 		if (crop) gl.disable(gl.SCISSOR_TEST)
 	},
-	nebula: function (color1, color2) {
+	nebula: function (color1, color2, Tfactor) {
+		if (Tfactor === undefined) Tfactor = 100
 		gl.progs.nebula.use()
 		gl.activeTexture(gl.TEXTURE1)
 		gl.bindTexture(gl.TEXTURE_2D, this.nebulatexture)
 		gl.progs.nebula.set({
 			screen: [this.wV, this.hV],
-			T: Date.now() / 100000 % 1,
+			T: Date.now() / (Tfactor * 1000) % 1,
 			color1: color1,
 			color2: color2,
 			y0: 0.00015 * state.y0,
@@ -193,11 +194,29 @@ let draw = {
 		})
 		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
 	},
+	rift: function () {
+		gl.progs.rift.use()
+		gl.activeTexture(gl.TEXTURE1)
+		gl.bindTexture(gl.TEXTURE_2D, this.nebulatexture)
+		gl.progs.rift.set({
+			screen: [this.wV, this.hV],
+			T: Date.now() / -10000 % 1,
+			color1: [0.5, 1, 0.5],
+			color2: [1, 1, 1],
+			y0: state.y0,
+			texture: 1,
+		})
+		pUbuffer.bind()
+		gl.progs.rift.assignAttribOffsets({
+			pU: 0,
+		})
+		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
+	},
 	_star: function (prog, sfactor, Tfactor) {
 		prog.use()
 		prog.set({
 			screen: [this.wV, this.hV],
-			T: Date.now() / (Tfactor * 1000) % 1,
+			T: Tfactor ? Date.now() / (Tfactor * 1000) % 1 : 0,
 		})
 		if (prog.set.y0) prog.set.y0(0.00025 * state.y0)
 		this.starbuffer.bind()
@@ -207,8 +226,9 @@ let draw = {
 		let n = Math.min(this.nstar, Math.floor(sfactor * this.wV * this.hV))
 		gl.drawArrays(gl.POINTS, 0, n)
 	},
-	starfly: function () {
-		this._star(gl.progs.starfly, 0.002, 100)
+	starfly: function (Tfactor) {
+		if (Tfactor === undefined) Tfactor = 100
+		this._star(gl.progs.starfly, 0.002, Tfactor)
 	},
 	startalk: function () {
 		this._star(gl.progs.startalk, 0.004, 300)
@@ -442,6 +462,7 @@ const shaders = {
 	startalk: {},
 	starfly: {},
 	nebula: {},
+	rift: {},
 	rock: {},
 	sprite: {},
 	bullet: {},
@@ -543,6 +564,47 @@ void main() {
 	gl_FragColor = vec4(a * color, 1.0);
 }
 `
+shaders.rift.vert = `
+attribute vec2 pU;
+uniform vec2 screen;
+uniform float T;
+uniform float y0;
+varying vec2 pA;
+varying float dT;
+void main() {
+	pA = pU * 0.05;
+	pA.x += y0 / 480.0 * 0.1;
+	pA.y -= 300.0 / 854.0 * 0.1;
+	pA.y *= 16.0 / 9.0;
+	dT = T;
+	vec2 p = pU;
+	if (screen.x > screen.y) p = vec2(p.y, -p.x);
+	gl_Position = vec4(p, 0.0, 1.0);
+}
+`
+shaders.rift.frag = `
+precision highp float;
+uniform sampler2D texture;
+uniform vec3 color1, color2;
+varying vec2 pA;
+varying float dT;
+const float tau = 6.283185307179586;
+void main() {
+	vec2 pT = vec2(sqrt(distance(pA, vec2(0.0))), atan(pA.x, pA.y) / tau);
+	float f = 0.4;
+	float a = texture2D(texture, 21.0 * pT).r;
+	a = mix(a, texture2D(texture, 13.0 * pT).g, f);
+	a = mix(a, texture2D(texture, 8.0 * pT).b, f);
+	a = mix(a, texture2D(texture, 5.0 * pT + vec2(-5.0, -2.0) * dT).r, f);
+	a = mix(a, texture2D(texture, 3.0 * pT + vec2(-6.0, -2.0) * dT).g, f);
+	a = mix(a, texture2D(texture, 1.0 * pT + vec2(1.0, 1.0) * dT).b, f);
+	a += 1.0 - pT.x * 8.0;
+	vec3 color = mix(color1, color2, a);
+	gl_FragColor = vec4(color, a);
+}
+`
+
+
 
 shaders.rock.vert = `
 attribute vec2 pU;  // Unit coordinates

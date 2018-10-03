@@ -245,12 +245,7 @@ let state = {
 			return true
 		})
 
-		let ymax = this.yrange - this.you.r
-		let y0max = this.yrange - 240
-		let a = y0max / (2 * Math.pow(ymax, 3))
-		let b = 3 * Math.pow(ymax, 2) * a
-		this.y0 = b * this.you.y - a * Math.pow(this.you.y, 3)
-		
+		this.sety0()
 		this.checkwin(dt)
 	},
 	checkwin: function (dt) {
@@ -272,6 +267,13 @@ let state = {
 		this.waves = []
 		this.bosses = []
 		this.spawners = []
+	},
+	sety0: function () {
+		let ymax = this.yrange - this.you.r
+		let y0max = this.yrange - 240
+		let a = y0max / (2 * Math.pow(ymax, 3))
+		let b = 3 * Math.pow(ymax, 2) * a
+		this.y0 = b * this.you.y - a * Math.pow(this.you.y, 3)
 	},
 	draw: function () {
 		draw.rocks(this.rocks.map(rock => rock.rockdata()))

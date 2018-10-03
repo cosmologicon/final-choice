@@ -7,7 +7,6 @@ let settings = {
 	sfxvolume: 0.6,
 	musicvolume: 0.6,
 	dialogvolume: 0.6,
-	easy: true,
 }
 let DEBUG = window.location.href.includes("DEBUG")
 

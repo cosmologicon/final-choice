@@ -260,6 +260,20 @@ const SinusoidsAcross = {
 	},
 }
 
+const CirclesRift = {
+	start: function () {
+		this.rrift = 300
+		this.thetarift = 0
+		this.think(0)
+	},
+	think: function (dt) {
+		this.rrift = 1 + 300 * Math.exp(-0.03 * this.t)
+		this.thetarift += 160 / this.rrift * dt
+		this.x = this.rrift * Math.cos(this.thetarift) + 300
+		this.y = this.rrift * Math.sin(this.thetarift) + 0
+	},
+}
+
 // HEALTH
 
 const InfiniteHealth = {
@@ -1378,6 +1392,17 @@ Gabriel.prototype = UFX.Thing()
 	.addcomp(InfiniteHealth)
 	.addcomp(DrawFacingImage, "gabriel", 0.6)
 	.addcomp(Visitable, false)
+function Him(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+Him.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(Collides, 5)
+	.addcomp(CirclesRift)
+	.addcomp(Tumbles, 1)
+	.addcomp(DrawAngleImage, "cutter", 5)
 
 
 function Corpse(obj) {
