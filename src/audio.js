@@ -52,6 +52,7 @@ let audio = {
 		})
 		UFX.audio.loadbuffers(buffers)
 		this.musicnodes = []
+		this.dialognode = null
 		voplayer.init()
 		this.on = true
 		this.offtimer = 0
@@ -155,7 +156,11 @@ let audio = {
 
 	stopdialog: function () {
 		if (!UFX.audio.context) return
-		// TODO
+		if (this.dialognode !== null) {
+			this.dialognode.stop()
+			this.dialognode.cleanup()
+			this.dialognode = null
+		}
 	},
 
 	playvoiceover: function (name) {
@@ -166,7 +171,8 @@ let audio = {
 	playline: function (name) {
 		if (!UFX.audio.context) return
 		this.stopdialog()
-		UFX.audio.playbuffer(name, { output: "dialog", })
+		this.dialognode = UFX.audio.playbuffer(name, { output: "dialog", })
+		return this.dialognode
 	},
 }
 

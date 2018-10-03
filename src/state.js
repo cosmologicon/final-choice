@@ -318,15 +318,22 @@ let state = {
 	addasteroids: function (n, x0, j0) {
 		j0 = j0 || 0
 		for (let j = j0 ; j < j0 + n ; ++j) {
+			let c = UFX.random(0.6, 0.9)
+			let color = [c + UFX.random(0.05), c + UFX.random(0.05), c + UFX.random(0.05)]
 			let [dx, dy, dr, dvx] = randomrock[j]
 			let x = x0 + 200 * dx
 			let y = (dy * 2 - 1) * state.yrange
 			let r = Math.round((30 + 40 * dr) / 20) * 20
 			let vx = -20 - 40 * dvx
 			let vy = (dvx * 1000 % 1 * 2 - 1) * 2
-			this.rocks.push(new Rock({ x: x, y: y, vx: vx, vy: vy, r: r, hp: Math.floor(r * 0.7), }))
+			this.rocks.push(new Rock({ x: x, y: y, vx: vx, vy: vy, r: r, hp: Math.floor(r * 0.7), color0: color, }))
 		}
 	},
+	addbluerock: function (x, y, vx, vy) {
+		if (this.saved.X) return
+		this.rocks.push(new BlueRock({ x: x, y: y, vx: vx, vy: vy }))
+	},
+
 	addformationwave: function (EType, r, x0, y0, nx, ny, steps) {
 		for (let jx = 0, j = 0 ; jx < nx ; ++jx) {
 			for (let jy = 0 ; jy < ny ; ++jy, ++j) {
@@ -374,12 +381,39 @@ let state = {
 			}
 		}
 	},
+	addcobra: function (n, r, x0, y0, dx, dy, p0, h) {
+		for (let jseg = 0 ; jseg < n ; ++jseg) {
+			this.enemies.push(new Cobra({
+				x0arc: x0, y0arc: y0, dxarc: dx, dyarc: dy,
+				p0arc: p0, harc: h, r: r,
+			}))
+			p0 -= r * 0.8
+			r *= 0.95
+		}
+	},
+
 	addemu: function () {
 		this.bosses.push(new Emu({ x: 600, y: 0, xtarget: 100 }))
 	},
 	addegret: function () {
 		let egret = new Egret({ x: 600, y: 0, xtarget0: 280 })
 		this.bosses.unshift(egret)
+	},
+	addmedusa: function () {
+		let boss = new Medusa({ x: 600, y: 0, xtarget: 350 })
+		this.bosses.push(boss)
+		for (let jtheta = 0 ; jtheta < 3 ; ++jtheta) {
+			for (let jr = 0 ; jr < 7 ; ++jr) {
+				let r = 20 * Math.pow(0.92, jr)
+				let theta0 = (jtheta / 3 + jr / 40) * Math.tau
+				let theta1 = (jtheta / 3 - jr / 70) * Math.tau
+				let diedelay = 0.5 + 0.2 * jr
+				this.enemies.push(
+					new Asp({ target: boss, omega: -0.8, R: 100, theta: theta0, r: r, diedelay: diedelay }),
+					new Asp({ target: boss, omega: 0.5, R: 150, theta: theta1, r: r, diedelay: diedelay })
+				)
+			}
+		}
 	},
 
 	heal: function (amount) {

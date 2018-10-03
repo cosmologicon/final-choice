@@ -3,7 +3,7 @@
 UFX.scenes.visit = {
 	start: function (name) {
 		this.name = "" + name
-		audio.playsfx(vdata[this.name].sname + "1")
+		audio.playline(vdata[this.name].sname + "1")
 		this.t = 0
 		this.opt = 0
 		this.starting = true
@@ -37,14 +37,14 @@ UFX.scenes.visit = {
 		this.popped = true
 		if (this.opt == 0) {
 			state.downgrade(vdata[this.name].do)
-			audio.playsfx(vdata[this.name].sname + "2")
+			audio.playline(vdata[this.name].sname + "2")
 			if (this.name == "7") {
 				;"123456X".forEach(who => { state.saved[who] = false })
 			} else {
 				state.saved[this.name] = true
 			}
 		} else {
-			audio.playsfx(vdata[this.name].sname + "3")
+			audio.playline(vdata[this.name].sname + "3")
 		}
 		audio.tofly()
 		UFX.scene.pop()

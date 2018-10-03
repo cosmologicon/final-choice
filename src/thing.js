@@ -226,6 +226,29 @@ const Cycloid = {
 	},
 }
 
+const SinusoidsAcross = {
+	start: function () {
+		this.varc = 50
+		this.harc = 50
+		this.p0arc = 0
+	},
+	think: function (dt) {
+		if (!this.alive || (this.target && !this.target.alive)) return
+		let p = this.p0arc + this.varc * this.t
+		let dpdt = this.varc
+		let darc = Math.hypot(this.dxarc, this.dyarc)
+		let beta = Math.tau * p / darc
+		let dbetadt = Math.tau * dpdt / darc
+		let h = this.harc * Math.sin(beta)
+		let dhdt = this.harc * dbetadt * Math.cos(beta)
+		let [C, S] = Math.norm([this.dxarc, this.dyarc])
+		this.x = this.x0arc + p * C - h * S
+		this.y = this.y0arc + p * S + h * C
+		this.vx = dpdt * C - dhdt * S
+		this.vy = dpdt * S + dhdt * C
+	},
+}
+
 // HEALTH
 
 const InfiniteHealth = {
@@ -398,6 +421,9 @@ const BossBound = {
 	},
 }
 const EncirclesBoss = {
+	init: function (faceout) {
+		this.faceout = faceout
+	},
 	start: function () {
 		this.vx = 0
 		this.vy = 0
@@ -406,10 +432,12 @@ const EncirclesBoss = {
 		if (!this.alive || !this.target.alive) return
 		this.theta += this.omega * dt
 		let S = Math.sin(this.theta), C = Math.cos(this.theta)
+		if (this.faceout) S *= -1
 		this.x = this.target.x + this.R * C
-		this.y = this.target.y + this.R * -S
-		this.vx = S * this.R * this.omega
-		this.vy = -C * this.R * this.omega
+		this.y = this.target.y + this.R * S
+		this.vx = -S * this.R * this.omega
+		this.vy = C * this.R * this.omega
+			
 	},
 }
 const ABBullets = {
@@ -592,6 +620,42 @@ const SpawnsSwallows = {
 	},
 }
 
+const SpawnsCobras = {
+	init: function (dtcobra) {
+		this.dtcobra = dtcobra
+	},
+	start: function () {
+		this.tcobra = 0
+		this.jcobra = 0
+	},
+	think: function (dt) {
+		for (this.tcobra += dt ; this.tcobra > this.dtcobra ; this.tcobra -= this.dtcobra) {
+			this.spawncobra()
+		}
+	},
+	spawncobra: function () {
+		let x0 = 500 + (this.jcobra * Math.phi % 1) * 200
+		let y0 = (this.jcobra * Math.phi % 1 * 2 - 1) * state.yrange
+		let dx = -600, dy = (this.jcobra * Math.phi * Math.phi % 1 * 2 - 1) * 100
+		let h = 80, p0 = 0, r = 40
+		for (let jseg = 0 ; jseg < 12 ; ++jseg) {
+			state.enemies.push(new Cobra({
+				x0arc: x0, y0arc: y0, dxarc: dx, dyarc: dy,
+				p0arc: p0, harc: h, r: r, target: this,
+				diedelay: 0.5 + 0.2 * jseg,
+			}))
+			p0 -= r * 0.8
+			r *= 0.95
+		}
+		this.jcobra += 1
+	},
+}
+
+const SpawnsCapsule = {
+	die: function () {
+		state.planets.push(new Capsule({ x: this.x, y: this.y, vx: this.vx, vy: this.vy, name: "X", }))
+	},
+}
 
 // DISPLAY
 
@@ -861,6 +925,7 @@ const SpawnsCompanion = {
 
 
 
+
 function You(obj) {
 	this.start()
 	for (let s in obj) this[s] = obj[s]
@@ -1058,6 +1123,22 @@ Lark.prototype = UFX.Thing()
 	.addcomp(DrawFacingImage, "canary", 1.7)
 	.addcomp(LeavesCorpse)
 
+function Cobra(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+Cobra.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(BossBound)
+	.addcomp(SinusoidsAcross)
+	.addcomp(Lives)
+	.addcomp(DisappearsOffscreen, 800)
+	.addcomp(InfiniteHealth)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(KnocksOnCollision, 40)
+	.addcomp(DrawFacingImage, "snake", 1.2, 0)
+	.addcomp(LeavesCorpse)
+
 
 function Emu(obj) {
 	this.start()
@@ -1105,7 +1186,7 @@ function Swallow(obj) {
 Swallow.prototype = UFX.Thing()
 	.addcomp(WorldBound)
 	.addcomp(BossBound)
-	.addcomp(EncirclesBoss)
+	.addcomp(EncirclesBoss, true)
 	.addcomp(Lives)
 	.addcomp(HasHealth, 20)
 	.addcomp(Collides, 30)
@@ -1113,11 +1194,44 @@ Swallow.prototype = UFX.Thing()
 	.addcomp(KnocksOnCollision, 40)
 	.addcomp(DrawAngleImage, "swallow", 1.3)
 	.addcomp(LeavesCorpse)
+function Medusa(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+Medusa.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(HasHealth, 30) // was 16
+	.addcomp(Collides, 60)
+	.addcomp(RoundhouseBullets, 0.1)
+	.addcomp(SeeksHorizontalPosition, 30, 30)
+	.addcomp(VerticalSinusoid, 0.4, 120)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(KnocksOnCollision, 40)
+//	.addcomp(SpawnsCobras)   How does this make sense???
+	.addcomp(Tumbles, 1)
+	.addcomp(DrawAngleImage, "medusa", 1.5)
+	.addcomp(LeavesCorpse)
+function Asp(obj) {
+	this.start()
+	for (let s in obj) this[s] = obj[s]
+}
+Asp.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(BossBound)
+	.addcomp(EncirclesBoss)
+	.addcomp(Lives)
+	.addcomp(HasHealth, 10) // was 20
+	.addcomp(Collides, 4)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(KnocksOnCollision, 40)
+	.addcomp(DrawFacingImage, "snake", 1.2, 0)
+	.addcomp(LeavesCorpse)
 
 function Rock(obj) {
 	this.start()
-	for (let s in obj) this[s] = obj[s]
 	this.iflashmax = 0.3
+	for (let s in obj) this[s] = obj[s]
 }
 Rock.prototype = UFX.Thing()
 	.addcomp(WorldBound)
@@ -1131,6 +1245,24 @@ Rock.prototype = UFX.Thing()
 	.addcomp(KnocksOnCollision, 40)
 	.addcomp(DrawTumblingRock)
 	.addcomp(LeavesCorpse)
+function BlueRock(obj) {
+	this.start()
+	this.iflashmax = 0.3
+	for (let s in obj) this[s] = obj[s]
+}
+BlueRock.prototype = UFX.Thing()
+	.addcomp(WorldBound)
+	.addcomp(Lives)
+	.addcomp(LinearMotion)
+	.addcomp(HasHealth, 40)
+	.addcomp(Collides, 20)
+	.addcomp(DisappearsOffscreen)
+	.addcomp(HurtsOnCollision, 2)
+	.addcomp(KnocksOnCollision, 40)
+	.addcomp(SpawnsCapsule)
+	.addcomp(DrawTumblingRock, [0.8, 0.8, 1.0])
+	.addcomp(LeavesCorpse)
+
 function Corpse(obj) {
 	this.start()
 	for (let s in obj) this[s] = obj[s]
