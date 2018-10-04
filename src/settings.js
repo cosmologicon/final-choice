@@ -1,7 +1,7 @@
 "use strict"
 
 let settings = {
-	portrait: true,
+	portrait: false,
 	fullscreen: false,
 	swapaction: false,
 	sfxvolume: 0.6,
@@ -13,8 +13,15 @@ let DEBUG = window.location.href.includes("DEBUG")
 
 UFX.key.remaparrows(true)
 UFX.key.remap({
-	space: "action", enter: "action", Z: "action", // ctrl: "action", shift: "action",
+	space: "action", enter: "action", Z: "action", X: "action", // ctrl: "action", shift: "action",
 	tab: "swap", caps: "swap",
 	esc: "quit", Q: "quit", P: "quit",
-	// TODO: portrait, toggledebug, fullscreen
+	F: "fullscreen", F11: "fullscreen",
+	backspace: "aspect",
 })
+UFX.key.watchlist = [
+	"up", "down", "left", "right", "action", "swap", "quit", "fullscreen", "aspect",
+]
+if (DEBUG) {
+	UFX.key.watchlist = null
+}

@@ -23,7 +23,7 @@ let save = {
 		if (!obj) return
 		if ("settings" in obj) settings = obj.settings
 		if ("progress" in obj) progress = obj.progress
-		if ("checkpoint" in obj) checkpoint = obj.checkpoint
+		checkpoint = obj.checkpoint || null
 	},
 }
 

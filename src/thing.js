@@ -417,6 +417,7 @@ const HealsOnCollect = {
 	},
 }
 
+
 // ENEMY BEHAVIOR
 
 const LetPickup = {
@@ -781,6 +782,13 @@ function iflashcolor(iflash) {
 	return [null, [1, 0.2, 0.2], null, [1, 0.7, 0.2]][Math.floor(a) % 4]
 }
 
+
+const FlashesOnInvulnerable = {
+	think: function (dt) {
+		this.iflash = state.tinvulnerable
+	},
+}
+
 const DrawAngleImage = {
 	init: function (imgname, imgscale) {
 		this.imgname = imgname
@@ -800,7 +808,7 @@ const DrawAngleImage = {
 			x: this.x, y: this.y,
 			scale: scale,
 			A: A,
-			// cfilter = getcfilter(self.iflash))
+			color: iflashcolor(this.iflash),
 		}
 	},
 }
@@ -824,6 +832,7 @@ const DrawFacingImage = {
 			x: this.x, y: this.y,
 			scale: scale,
 			A: angle,
+			color: iflashcolor(this.iflash),
 		}
 	},
 }
@@ -842,7 +851,7 @@ const DrawTumblingRock = {
 		this.rtheta += this.romega * dt
 	},
 	rockdata: function () {
-		let scale = 0.01 * this.r * 0.39 * 4  // ???
+		let scale = 0.017 * this.r
 		let color = iflashcolor(this.iflash) || this.color0
 		return { x: this.x, y: this.y, r: this.r, T: this.rtheta % 1, color: color }
 		
@@ -916,14 +925,13 @@ const FiresWithSpace = {
 		audio.playsfx("shot")
 		this.tshot = 0
 	},
-	draw: function () {
-		/* TODO: charge circle
-		charge = self.getcharge()
-		if charge <= 0: return
-		pos = view.screenpos((self.x + self.r * 7, self.y))
-		r = T(view.Z * self.getbulletsize())
-		color = (255, 255, 255) if self.t * 4 % 1 > 0.5 else (200, 200, 255)
-		*/
+	objdata: function () {
+		let color = this.t * 4 % 1 > 0.5 ? [1, 1, 1, 1] : [0.8, 0.8, 1, 1]
+		return {
+			x: this.x + this.r * 7, y: this.y,
+			r: this.getcharge() ? this.getbulletsize() : 0,
+			color: color,
+		}
 	},
 }
 
@@ -1017,8 +1025,8 @@ You.prototype = UFX.Thing()
 	.addcomp(Collides, 5)
 	.addcomp(SpawnsCompanion)
 	.addcomp(ConstrainToScreen, 5, 5)
-//	.addcomp(FlashesOnInvulnerable)
 	.addcomp(DrawFacingImage, "you", 5, 1000)
+	.addcomp(FlashesOnInvulnerable)
 	.addcomp(LeavesCorpse)
 	.addcomp({
 		hurt: function (damage) {
@@ -1097,7 +1105,7 @@ HealthPickup.prototype = UFX.Thing()
 	.addcomp(DrawAngleImage, "health", 5)
 	.addcomp(Collectable)
 	.addcomp(HealsOnCollect)
-	// TODO: DisappearsOffscreen???
+	.addcomp(DisappearsOffscreen)  // added
 
 
 function BadBullet(obj) {
@@ -1212,7 +1220,7 @@ Cobra.prototype = UFX.Thing()
 	.addcomp(InfiniteHealth)
 	.addcomp(HurtsOnCollision, 2)
 	.addcomp(KnocksOnCollision, 40)
-	.addcomp(DrawFacingImage, "snake", 1.2, 0)
+	.addcomp(DrawFacingImage, "snake", 1.3, 0)
 	.addcomp(LeavesCorpse)
 
 
@@ -1245,7 +1253,6 @@ Egret.prototype = UFX.Thing()
 	.addcomp(Lives)
 	.addcomp(InfiniteHealth)
 	.addcomp(Collides, 80)
-	//.addcomp(RoundhouseBullets)
 	.addcomp(SeeksHorizontalSinusoid, 30, 30, 0.8, 100)
 	.addcomp(VerticalSinusoid, 0.6, 120)
 	.addcomp(HurtsOnCollision, 2)
@@ -1284,7 +1291,7 @@ Medusa.prototype = UFX.Thing()
 	.addcomp(VerticalSinusoid, 0.4, 120)
 	.addcomp(HurtsOnCollision, 2)
 	.addcomp(KnocksOnCollision, 40)
-//	.addcomp(SpawnsCobras)   How does this make sense???
+	.addcomp(SpawnsCobras, 6)
 	.addcomp(Tumbles, 1)
 	.addcomp(DrawAngleImage, "medusa", 1.5)
 	.addcomp(LeavesCorpse)

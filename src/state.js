@@ -123,6 +123,7 @@ let state = {
 				this.missiletime = 0.6
 				this.vshots = 3
 				this.chargetime = 3
+				this.dtinvulnerable = 1.5
 				break
 		}
 	},	
@@ -132,6 +133,8 @@ let state = {
 	startgame: function () {
 		this.stage = 1
 		this.setbase()
+		this.shieldhp = this.shieldhp0
+		this.hp = this.hp0
 		this.downgrades = []
 		this.met = {}
 		this.saved = {}
@@ -205,6 +208,7 @@ let state = {
 		this.xoffset = 0
 	},
 	think: function (dt) {
+		this.tinvulnerable = Math.max(this.tinvulnerable - dt, 0)
 		this.shieldhp = Math.min(this.shieldhp + this.shieldrate * dt, this.shieldhp0)
 
 		let objs = this.yous.concat(this.goodbullets, this.goodmissiles, this.pickups, this.planets,
@@ -247,6 +251,7 @@ let state = {
 
 		this.sety0()
 		this.checkwin(dt)
+		this.checklose(dt)
 	},
 	checkwin: function (dt) {
 		if (!this.waves.length && !this.bosses.length && !this.spawners.length && voplayer.done()) {
@@ -261,6 +266,15 @@ let state = {
 				this.you.x += (this.twin - 2) * 1000 * dt
 				if (this.you.x > 1000) this.win()
 			}
+		}
+	},
+	checklose: function (dt) {
+		if (this.you.alive) return
+		this.tlose += dt
+		if (this.tlose > 3) {
+			voplayer.stop()
+			audio.stopdialog()
+			UFX.scene.pop()
 		}
 	},
 	cheat: function () {
@@ -279,13 +293,17 @@ let state = {
 		draw.rocks(this.rocks.map(rock => rock.rockdata()))
 		let sprites = this.yous.concat(this.enemies, this.bosses, this.goodmissiles, this.pickups, this.planets)
 		draw.sprites(sprites.map(sprite => sprite.spritedata()))
-		let bullets = this.goodbullets.concat(this.badbullets, this.corpses)
+		let bullets = this.goodbullets.concat(this.badbullets, this.corpses, [this.you])
 		draw.bullets(bullets.map(bullet => bullet.objdata()))
 		
 		gl.progs.text.use()
 		this.planets.forEach(planet => planet.drawtext())
 		
 		this.spawners.forEach(spawners => spawner.draw())
+	},
+	drawhitboxes: function () {
+		let objs = this.yous.concat(this.pickups, this.rocks, this.enemies, this.bosses, this.planets)
+		draw.hitbox(objs)
 	},
 
 	addapickup: function (amount, who) {

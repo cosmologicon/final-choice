@@ -60,7 +60,8 @@ let draw = {
 		this.canvas = document.getElementById("canvas")
 		gl = UFX.gl(canvas)
 		if (!gl) {
-			// TODO
+			window.alert("WebGL browser support required. See http://get.webgl.org")
+			return
 		}
 		UFX.gltext.init(gl)
 		canvas.style.background = "black"
@@ -258,7 +259,8 @@ let draw = {
 	sprites: function (sdata) {
 		let data = builddata(sdata, sprite => {
 			let [tx, ty, tw, th] = Tdata[sprite.imgname]
-			return [sprite.x, sprite.y, tx, ty, tw, th, sprite.scale, sprite.A, 1, 1, 1]
+			let color = sprite.color || [1, 1, 1]
+			return [sprite.x, sprite.y, tx, ty, tw, th, sprite.scale, sprite.A].concat(color)
 		})
 		if (!data.length) return
 		gl.progs.sprite.use()
@@ -278,6 +280,25 @@ let draw = {
 			scale: 8,
 			A: 9,
 			color: 10,
+		})
+		gl.drawArrays(gl.TRIANGLES, 0, data.nvert)
+	},
+	hitbox: function (objs) {
+		let data = builddata(objs, obj => {
+			return [obj.x, obj.y, obj.r]
+		})
+		if (!data.length) return
+		gl.progs.hitbox.use()
+		gl.progs.hitbox.set({
+			screensizeV: [this.wV, this.hV],
+			y0G: state.y0,
+			color: [1, 1, 0.7],
+		})
+		gl.makeArrayBuffer(data).bind()
+		gl.progs.hitbox.assignAttribOffsets({
+			pU: 0,
+			pG0: 2,
+			GscaleU: 4,
 		})
 		gl.drawArrays(gl.TRIANGLES, 0, data.nvert)
 	},
@@ -393,9 +414,14 @@ let draw = {
 // UFX.scene.push("gofull") will pause and give the player 5 seconds to confirm going fullscreen.
 UFX.scenes.gofull = {
 	start: function () {
-		if (UFX.maximize.getfullscreenelement() === canvas) {
+		let isfull = UFX.maximize.getfullscreenelement() === canvas
+		if (!settings.fullscreen) {
 			UFX.maximize.setoptions({ fullscreen: false })
 			document.exitFullscreen()
+			UFX.scene.pop()
+			return
+		}
+		if (isfull && settings.fullscreen) {
 			UFX.scene.pop()
 			return
 		}
@@ -465,6 +491,7 @@ const shaders = {
 	rift: {},
 	rock: {},
 	sprite: {},
+	hitbox: {},
 	bullet: {},
 	bio: {},
 }
@@ -791,6 +818,40 @@ void main() {
 	} else {
 		discard;
 	}
+}
+`
+
+shaders.hitbox.vert = `
+attribute vec2 pU;
+attribute vec2 pG0;
+attribute float GscaleU;
+uniform vec2 screensizeV;
+uniform float y0G;
+
+const vec2 PscaleG = vec2(1.0 / 427.0, 1.0 / 240.0);
+varying vec2 pT;
+varying float aT;
+void main() {
+	vec2 pG = pG0 + GscaleU * pU;
+	pG.y = y0G - pG.y;
+	vec2 pP = PscaleG * pG;
+	if (screensizeV.y > screensizeV.x) {
+		pP = vec2(-pP.y, pP.x);
+	}
+	gl_Position = vec4(pP, 0.0, 1.0);
+	pT = pU;
+	aT = GscaleU;
+}
+`
+shaders.hitbox.frag = `
+precision highp float;
+uniform vec3 color;
+varying vec2 pT;
+varying float aT;
+void main() {
+	float r = length(pT);
+	if (r > 1.0 || 1.0 - r > 0.8 / aT) discard;
+	gl_FragColor = vec4(color, 1.0);
 }
 `
 

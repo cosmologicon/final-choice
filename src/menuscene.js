@@ -119,7 +119,7 @@ UFX.scenes.menu = {
 UFX.scenes.settings = {
 	start: function () {
 		this.opt = "Done"
-		this.opts = ["Layout", "Fullscreen", "Auto-fire", "Sound volume", "Music volume", "Voice volume", "Done"]
+		this.opts = ["Layout", "Fullscreen", "Auto-fire", "Sound volume", "Music volume", "Voice volume", "Silence all", "Done"]
 	},
 	think: function (dt) {
 		let kstate = UFX.key.state()
@@ -148,7 +148,6 @@ UFX.scenes.settings = {
 			case "Fullscreen":
 				settings.fullscreen = !settings.fullscreen
 				UFX.scene.push("gofull")
-				// TODO
 				break
 			case "Auto-fire":
 				settings.swapaction = !settings.swapaction
@@ -163,6 +162,14 @@ UFX.scenes.settings = {
 				break
 			case "Voice volume":
 				settings.dialogvolume = alevel(settings.dialogvolume)
+				audio.setdialogvolume(settings.dialogvolume)
+				break
+			case "Silence all":
+				settings.sfxvolume = 0
+				audio.setsfxvolume(settings.sfxvolume)
+				settings.musicvolume = 0
+				audio.setmusicvolume(settings.musicvolume)
+				settings.dialogvolume = 0
 				audio.setdialogvolume(settings.dialogvolume)
 				break
 			case "Done":
@@ -187,7 +194,7 @@ UFX.scenes.settings = {
 		gl.progs.text.use()
 		this.opts.forEach((opt, jopt) => {
 			let text = opt
-			if (text != "Done") text += ": " + this.getsetting(opt)
+			if (text != "Done" && text != "Silence all") text += ": " + this.getsetting(opt)
 			if (opt == this.opt) text = "\u2022 " + text + " \u2022"
 			let color = opt == this.opt ? "white" : "#AAA"
 			UFX.scenes.menu.drawline(text, 160 - 40 * jopt, 32, color)

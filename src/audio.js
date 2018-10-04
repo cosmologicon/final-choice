@@ -18,7 +18,12 @@ let audio = {
 	gamma: 1.7,
 
 	init: function () {
+		voplayer.init()
 		UFX.audio.init()
+		if (!UFX.audio.context) {
+			window.alert("HTML5 Audio context required for sound support.")
+			return
+		}
 		UFX.audio.makegainnode({ name: "main" })  // Only adjusted during pausing.
 		UFX.audio.makegainnode({ name: "sound", output: "main" })
 		UFX.audio.makegainnode({ name: "sfx", output: "sound" })
@@ -53,7 +58,6 @@ let audio = {
 		UFX.audio.loadbuffers(buffers)
 		this.musicnodes = []
 		this.dialognode = null
-		voplayer.init()
 		this.on = true
 		this.offtimer = 0
 		
@@ -105,6 +109,7 @@ let audio = {
 	},
 
 	stopmusic: function () {
+		if (!UFX.audio.context) return
 		this.musicnodes.forEach(buffer => buffer.cleanup())
 		this.musicnodes = []
 	},
@@ -232,13 +237,13 @@ let voplayer = {
 			draw.avatar(avatar, pos, T(90), this.alpha, true)
 		}
 		let [fontname, fontsize, color, lineheight] = {
-			N: ["Fjalla One", 21, "#BBF", 1],
+			N: ["Fjalla One", 21, "#BBF", 1.2],
 			J: ["Lalezar", 21, "#BFB", 0.7],
 			C: ["Bungee", 18, "#FA5", 1.2],
 		}[who] || [null, 28, "white", 1]
 		fontsize = T(fontsize)
 		let width = settings.portrait ? T(340) : T(540)
-		let pos = yswap(settings.portrait ? T(100, 850) : T(160, 472))
+		let pos = yswap(settings.portrait ? T(110, 846) : T(170, 472))
 		gl.progs.text.use()
 		gl.progs.text.draw(text, {
 			bottomleft: pos, width: width,

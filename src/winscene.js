@@ -176,6 +176,9 @@ UFX.scenes.credits = {
 			audio.tochoose()
 		}
 	},
+	stop: function () {
+		if (state.best()) audio.startgamemusic(0)
+	},
 	think: function (dt) {
 		this.t += dt
 		if (this.t >= 45) UFX.scene.pop()

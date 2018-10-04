@@ -118,9 +118,16 @@ UFX.scenes.play = {
 	think: function (dt) {
 		// sound.mplay(2)
 		let kstate = UFX.key.state()
-		if (DEBUG && kstate.pressed.F1) dt *= 20
+		if (DEBUG && kstate.pressed.F1) {
+			dt *= 20
+			state.heal(1000)
+		}
 		if (kstate.down.quit) UFX.scene.push("pause")
 		if (kstate.down.swap) settings.swapaction = !settings.swapaction
+		if (kstate.down.aspect) {
+			settings.portrait = !settings.portrait
+			draw.setaspect()
+		}
 		if (state.you.alive) {
 			let dx = (kstate.pressed.right ? 1 : 0) - (kstate.pressed.left ? 1 : 0)
 			let dy = (kstate.pressed.down ? 1 : 0) - (kstate.pressed.up ? 1 : 0)
@@ -155,6 +162,20 @@ UFX.scenes.play = {
 		} else if (state.twin > 2) {
 			let alpha = Math.clamp(state.twin - 2, 0, 1)
 			draw.fill([0.8, 0.8, 1, alpha])
+		}
+		if (DEBUG) {
+			state.drawhitboxes()
+			let text = [
+				"HP: " + state.hp + " " + state.shieldhp.toFixed(2),
+				"tinvulnerable: " + state.tinvulnerable.toFixed(2),
+			].join("\n")
+			gl.progs.text.use()
+			gl.progs.text.draw(text, {
+				bottomleft: [10, 10],
+				fontname: "Bungee",
+				fontsize: T(20),
+				ocolor: "black",
+			})
 		}
 	},
 	drawhud: function () {
