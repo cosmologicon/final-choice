@@ -7,8 +7,10 @@ UFX.scenes.menu = {
 		this.f = 0
 		this.opt = "Settings"
 		this.opts0 = progress.beaten ? ["Settings", "Progress", "License"] : ["Settings", "License"]
-		this.opts = this.opts0
+		this.makeopts()
+		this.okopts = this.opts0
 		this.moved = false
+		this.loaded = false
 		
 		document.addEventListener("visibilitychange", () => {
 			if (document.hidden && UFX.scene.top() !== UFX.scenes.blur) {
@@ -23,9 +25,10 @@ UFX.scenes.menu = {
 	},
 	onload: function () {
 		draw.init()
-		this.makeopts()
+		this.okopts = this.opts
 		// if (!this.moved) this.opt = this.opts[0]
 		audio.startgamemusic(0)
+		this.loaded = true
 	},
 	makeopts: function () {
 		if (!progress.beaten && checkpoint === null) {
@@ -40,18 +43,19 @@ UFX.scenes.menu = {
 		this.opts = this.opts.concat(this.opts0)
 	},
 	resume: function () {
-		audio.tochoose(0)
+		console.log("resuming")
+		if (this.loaded) audio.tochoose(0)
 		this.makeopts()
-		this.opt = this.opts[0]
+		//this.opt = this.opts[0]
 	},
 	think: function (dt) {
 		let kstate = UFX.key.state()
 		if (kstate.down.down || kstate.down.right) {
-			this.opt = lnext(this.opts, this.opt)
+			this.opt = lnext(this.okopts, this.opt)
 			this.moved = true
 		}
 		if (kstate.down.up || kstate.down.left) {
-			this.opt = lprev(this.opts, this.opt)
+			this.opt = lprev(this.okopts, this.opt)
 			this.moved = true
 		}
 		if (kstate.down.action) {
@@ -82,16 +86,17 @@ UFX.scenes.menu = {
 				break
 		}
 	},
-	drawline: function (text, h, fontsize, color) {
-		let pos = [draw.wV / 2, draw.hV / 2 + T(h)]
+	drawline: function (text, h, fontsize, color, p0) {
+		p0 = p0 || [0.5, 0.5]
+		let pos = [draw.wV * p0[0], draw.hV * p0[1] + T(h)]
 		gl.progs.text.draw(text, {
 			midbottom: pos, color: color, fontname: "Bungee", fontsize: T(fontsize),
 			ocolor: "black", width: T(440),
 		})
 	},
 	draw: function () {
+		draw.clear()
 		draw.startalk()
-		
 		gl.progs.text.use()
 		this.drawline("The Final Choice", 160, 40, "white")
 		this.drawline("by Team Universe Factory", 124, 25, "yellow")
@@ -99,7 +104,7 @@ UFX.scenes.menu = {
 			let text = opt
 			if (text == "Continue") text += " [Stage " + (checkpoint ? checkpoint.stage : "???") + "]"
 			text = opt == this.opt ? "\u2022 " + text + " \u2022" : text
-			let color = opt == this.opt ? "white" : "#AAA"
+			let color = opt == this.opt ? "white" : this.okopts.includes(opt) ? "#AAA" : "#222"
 			this.drawline(text, 60 - 40 * jopt, 32, color)
 		})
 		if (this.f < 1) {
@@ -189,6 +194,7 @@ UFX.scenes.settings = {
 		}
 	},
 	draw: function () {
+		draw.clear()
 		draw.startalk()
 		
 		gl.progs.text.use()
@@ -268,10 +274,11 @@ UFX.scenes.progress = {
 
 
 UFX.scenes.pause = {
-	start: function () {
+	start: function (extrapop) {
 		audio.suspend()
 		this.opt = "Resume"
 		this.opts = ["Settings", "Quit to Menu", "Resume"]
+		this.topop = 2 + (extrapop || 0)
 	},
 	stop: function () {
 		audio.resume()
@@ -292,8 +299,9 @@ UFX.scenes.pause = {
 				UFX.scene.push("settings")
 				break
 			case "Quit to Menu":
-				UFX.scene.pop()
-				UFX.scene.pop()
+				for (let j = 0 ; j < this.topop ; ++j) UFX.scene.pop()
+				voplayer.stop()
+				audio.stopdialog()
 				break
 			case "Resume":
 				UFX.scene.pop()
@@ -302,12 +310,14 @@ UFX.scenes.pause = {
 	},
 	draw: function () {
 		draw.clear()
+		draw.help()
 		gl.progs.text.use()
+		let p0 = settings.portrait ? [0.5, 0.7] : [0.8, 0.35]
 		this.opts.forEach((opt, jopt) => {
 			let text = opt
 			if (opt == this.opt) text = "\u2022 " + text + " \u2022"
 			let color = opt == this.opt ? "white" : "#AAA"
-			UFX.scenes.menu.drawline(text, 60 - 40 * jopt, 32, color)
+			UFX.scenes.menu.drawline(text, 60 - 40 * jopt, 32, color, p0)
 		})
 	},
 }

@@ -25,7 +25,7 @@
 <script src="src/thing.js"></script>
 <script src="src/draw.js"></script>
 <body>
-<canvas id="canvas"></canvas>
+<canvas id="canvas" style="cursor: none"></canvas>
 <script>
 "use strict"
 window.onerror = function (error, url, line) {
@@ -36,7 +36,7 @@ settings.fullscreen = false
 // checkpoint = { stage: 3, met: {}, saved: {}, downgrades: [2], apickup: 0, }
 draw.load()
 audio.init()
-UFX.scene.init({ ups: 60, maxfpu: 5 })
+UFX.scene.init({ ups: 60, maxupf: 5 })
 UFX.scene.push("menu")
 </script>
 

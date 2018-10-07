@@ -10,6 +10,8 @@
 <script src="../UFX/src/resource.js"></script>
 <script src="../UFX/src/random.js"></script>
 <script src="../UFX/src/ticker.js"></script>
+<script src="../UFX/src/scene.js"></script>
+<script src="../UFX/src/key.js"></script>
 <script src="src/settings.js"></script>
 <script src="src/state.js"></script>
 <script src="src/draw.js"></script>
@@ -20,13 +22,16 @@
 window.onerror = function (error, url, line) {
 	document.body.innerHTML = "<p>Error in: "+url+"<p>line "+line+"<pre>"+error+"</pre>"
 }
-draw.init()
+draw.load()
 function think(dt) {
 	draw.clear()
 //	draw.nebula([0, 0, 0.3], [0.3, 0, 0.1])
 	draw.startalk()
 //	draw.starfly()
 }
-UFX.ticker.init(think)
+UFX.resource.onload = () => {
+	draw.init()
+	UFX.ticker.init(think)
+}
 </script>
 

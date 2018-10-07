@@ -30,6 +30,8 @@ let audio = {
 		UFX.audio.makegainnode({ name: "musicfade", output: "sound" })
 		UFX.audio.makegainnode({ name: "music", output: "musicfade" })
 		UFX.audio.makegainnode({ name: "gamemusic", output: "music" })
+		UFX.audio.makegainnode({ name: "flygain", output: "gamemusic" })
+		UFX.audio.makegainnode({ name: "choosegain", output: "gamemusic" })
 		UFX.audio.makegainnode({ name: "endmusic", output: "music" })
 		UFX.audio.makegainnode({ name: "dialog", output: "main" })
 		UFX.audio.setgain("endmusic", 0)
@@ -73,6 +75,10 @@ let audio = {
 			if (!this.offtimer) this.suspend()
 		}
 		voplayer.think(dt)
+		let talking = !voplayer.done() || this.dialognode
+		let soundgain0 = UFX.audio.getgain("sound")
+		let soundgain = Math.clamp(soundgain0 + dt * (talking ? -2 : 2), 0.3, 1)
+		if (soundgain != soundgain0) UFX.audio.setgain("sound", soundgain)
 	},
 	suspend: function () {
 		if (!UFX.audio.context) return
@@ -101,7 +107,7 @@ let audio = {
 	playsfx: function (sname) {
 		if (!UFX.audio.context) return
 		let Q = this.quiet[sname] || 0
-		let volume = Math.exp(-Q)
+		let volume = Math.exp(-0.7 * Q)
 		let bname = sname
 		if (bname == "shot") bname += UFX.random.choice([0, 1, 2])
 		UFX.audio.playbuffer(bname, { output: "sfx", gain: volume }),
@@ -117,9 +123,10 @@ let audio = {
 		if (!UFX.audio.context) return
 		if (pvolume === undefined) pvolume = 1
 		this.stopmusic()
+		this.tochoose()
 		this.musicnodes = [
-			UFX.audio.playbuffer("fly", { name: "fly", output: "gamemusic", loop: true, gain: pvolume, cleanup: true, }),
-			UFX.audio.playbuffer("choose", { name: "choose", output: "gamemusic", loop: true, gain: 1 - pvolume, cleanup: true, }),
+			UFX.audio.playbuffer("fly", { name: "fly", output: "flygain", loop: true, cleanup: true, }),
+			UFX.audio.playbuffer("choose", { name: "choose", output: "choosegain", loop: true, cleanup: true, }),
 		]
 		UFX.audio.setgain("musicfade", 0)
 		UFX.audio.setgain("musicfade", 1, { fade: 5, })
@@ -127,14 +134,14 @@ let audio = {
 	tofly: function (dt) {
 		if (!UFX.audio.context) return
 		if (dt === undefined) dt = this.tmusicfade
-		UFX.audio.setgain("fly_gain", 1, {fade: dt})
-		UFX.audio.setgain("choose_gain", 0, {fade: dt})
+		UFX.audio.setgain("flygain", 1, {fade: dt})
+		UFX.audio.setgain("choosegain", 0, {fade: dt})
 	},
 	tochoose: function (dt) {
 		if (!UFX.audio.context) return
 		if (dt === undefined) dt = this.tmusicfade
-		UFX.audio.setgain("fly_gain", 0, {fade: dt})
-		UFX.audio.setgain("choose_gain", 1, {fade: dt})
+		UFX.audio.setgain("flygain", 0, {fade: dt})
+		UFX.audio.setgain("choosegain", 1, {fade: dt})
 	},
 	setsfxvolume: function (volume) {
 		if (!UFX.audio.context) return
@@ -176,7 +183,9 @@ let audio = {
 	playline: function (name) {
 		if (!UFX.audio.context) return
 		this.stopdialog()
-		this.dialognode = UFX.audio.playbuffer(name, { output: "dialog", })
+		let dialognode = UFX.audio.playbuffer(name, { output: "dialog", })
+		this.dialognode = dialognode
+		dialognode.addEventListener("ended", () => { if (this.dialognode === dialognode) this.dialognode = null })
 		return this.dialognode
 	},
 }
@@ -238,7 +247,7 @@ let voplayer = {
 		}
 		let [fontname, fontsize, color, lineheight] = {
 			N: ["Fjalla One", 21, "#BBF", 1.2],
-			J: ["Lalezar", 21, "#BFB", 0.7],
+			J: ["Lalezar", 21, "#BFB", 1],
 			C: ["Bungee", 18, "#FA5", 1.2],
 		}[who] || [null, 28, "white", 1]
 		fontsize = T(fontsize)

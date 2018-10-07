@@ -9,6 +9,7 @@ UFX.scenes.play = {
 		state.yous.push(state.you)
 		this.makewaves()
 		audio.tofly()
+		this.haspaused = state.stage != 1
 	},
 	makewaves: function () {
 		if (state.stage == 1) {
@@ -122,11 +123,15 @@ UFX.scenes.play = {
 			dt *= 20
 			state.heal(1000)
 		}
-		if (kstate.down.quit) UFX.scene.push("pause")
+		if (kstate.down.quit) {
+			UFX.scene.push("pause")
+			this.haspaused = true
+		}
 		if (kstate.down.swap) settings.swapaction = !settings.swapaction
 		if (kstate.down.aspect) {
 			settings.portrait = !settings.portrait
 			draw.setaspect()
+			save.save()
 		}
 		if (state.you.alive) {
 			let dx = (kstate.pressed.right ? 1 : 0) - (kstate.pressed.left ? 1 : 0)
@@ -142,15 +147,26 @@ UFX.scenes.play = {
 			}
 		}
 		if (kstate.down.F2) state.heal(1000)
-		if (kstate.down.F3) state.cheat()
+		if (kstate.down.F3) {
+			state.cheat()
+			voplayer.stop()
+			audio.stopdialog()
+		}
 		state.think(dt)
 		audio.think(dt)
 	},
 	draw: function () {
-		if (settings.lowres) {
-			draw.clear()
-		} else {
-			draw.nebula([0.2, 0, 0], [0, 0.2, 0.2])
+		draw.clear()
+		if (!settings.lowres) {
+			if (state.stage == 1) {
+				draw.nebula([0.2, 0, 0], [0, 0.2, 0.2])
+			} else if (state.stage == 2) {
+				draw.nebula([0.1, 0, 0.1], [0.2, 0.1, 0])
+			} else if (state.stage == 3) {
+				draw.nebula([0, 0, 0], [0.2, 0.2, 0.2])
+			} else {
+				draw.nebula([0, 0, 0.3], [0, 0.2, 0.1])
+			}
 			draw.starfly()
 		}
 		state.draw()
@@ -166,12 +182,26 @@ UFX.scenes.play = {
 		if (DEBUG) {
 			state.drawhitboxes()
 			let text = [
+				"F1: hyperspeed",
+				"F2: heal",
+				"F3: beat stage",
 				"HP: " + state.hp + " " + state.shieldhp.toFixed(2),
 				"tinvulnerable: " + state.tinvulnerable.toFixed(2),
+				UFX.ticker.getrates(),
 			].join("\n")
 			gl.progs.text.use()
 			gl.progs.text.draw(text, {
 				bottomleft: [10, 10],
+				fontname: "Bungee",
+				fontsize: T(20),
+				ocolor: "black",
+			})
+		}
+		if (!this.haspaused) {
+			let text = "Esc: pause/help/settings"
+			gl.progs.text.use()
+			gl.progs.text.draw(text, {
+				topright: [draw.wV - 10, draw.hV - 10],
 				fontname: "Bungee",
 				fontsize: T(20),
 				ocolor: "black",

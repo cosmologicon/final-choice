@@ -12,6 +12,7 @@
 // 2: rocks
 // 3: sprites
 // 4: avatars (swap out)
+// 5: help
 
 "use strict"
 
@@ -49,6 +50,7 @@ let draw = {
 		UFX.resource.load({
 			rocks: "data/rocks.png",
 			sprites: "data/sprites.png",
+			help: "data/help.png",
 		})
 		;"1234567ACJX".split("").forEach(a => {
 			UFX.resource.load([["bio-" + a, "data/biopix/bio-" + a + ".jpg"]])
@@ -149,6 +151,14 @@ let draw = {
 				wrap: gl.CLAMP_TO_EDGE,
 			})
 		})
+
+		this.helptexture = gl.buildTexture({
+			source: UFX.resource.images.help,
+			min_filter: gl.LINEAR_MIPMAP_NEAREST,
+			flip: true,
+		})
+		gl.activeTexture(gl.TEXTURE5)
+		gl.bindTexture(gl.TEXTURE_2D, this.helptexture)
 	},
 	screenpos: function (pG) {
 		let [xG, yG] = pG
@@ -374,8 +384,8 @@ let draw = {
 		if (showtitle && a == 1) {
 			gl.progs.text.use()
 			let text = {
-				"1": "Dr. Paulson",
-				"2": "Chf. Danilowka",
+				"1": "Dr. Danilowka",
+				"2": "Chf. Paulson",
 				"3": "Lt. Jusuf",
 				"4": "Dr. Osaretin",
 				"5": "Mr. Tannenbaum",
@@ -395,6 +405,24 @@ let draw = {
 				fontsize: T(12),  // TODO: make larger?
 			})
 		}
+	},
+	help: function () {
+		let centerV = settings.portrait ? [this.wV / 2, this.hV * 0.25] : [this.wV * 0.35, this.hV / 2]
+		let VscaleU = settings.portrait ? this.wV / 2 : this.wV * 0.35
+		gl.progs.help.use()
+		gl.activeTexture(gl.TEXTURE5)
+		gl.bindTexture(gl.TEXTURE_2D, this.helptexture)
+		gl.progs.help.set({
+			centerV: centerV,
+			screensizeV: [this.wV, this.hV],
+			VscaleU: VscaleU,
+			texture: 5,
+		})
+		pUbuffer.bind()
+		gl.progs.help.assignAttribOffsets({
+			pU: 0,
+		})
+		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
 	},
 	
 	// The next key press will result in fullscreen being requested.
@@ -494,6 +522,7 @@ const shaders = {
 	hitbox: {},
 	bullet: {},
 	bio: {},
+	help: {},
 }
 
 shaders.fill.vert = `
@@ -818,6 +847,29 @@ void main() {
 	} else {
 		discard;
 	}
+}
+`
+
+// Help graphic
+shaders.help.vert = `
+attribute vec2 pU;
+uniform vec2 centerV;
+uniform vec2 screensizeV;
+uniform float VscaleU;
+varying vec2 pT;
+void main() {
+	vec2 pV = centerV + VscaleU * pU;
+	vec2 pP = pV / screensizeV * 2.0 - 1.0;
+	gl_Position = vec4(pP, 0.0, 1.0);
+	pT = pU * 0.5 + 0.5;
+}
+`
+shaders.help.frag = `
+precision highp float;
+uniform sampler2D texture;
+varying vec2 pT;
+void main() {
+	gl_FragColor = texture2D(texture, pT);
 }
 `
 

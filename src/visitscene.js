@@ -32,6 +32,7 @@ UFX.scenes.visit = {
 				audio.playsfx("start")
 			}
 		}
+		if (kstate.down.quit) UFX.scene.push("pause", 1)
 	},
 	finish: function () {
 		this.popped = true
@@ -39,7 +40,7 @@ UFX.scenes.visit = {
 			state.downgrade(vdata[this.name].do)
 			audio.playline(vdata[this.name].sname + "2")
 			if (this.name == "7") {
-				;"123456X".forEach(who => { state.saved[who] = false })
+				;"123456X".split("").forEach(who => { state.saved[who] = false })
 			} else {
 				state.saved[this.name] = true
 			}
@@ -134,10 +135,10 @@ UFX.scenes.visit = {
 
 let vdata = {}
 vdata["1"] = {
-	"sname": "Paulson",
+	"sname": "Danilowka",
 	"avatar": "1",
 	"title": "Ship's Doctor",
-	"name": "Donovan Paulson",
+	"name": "Sergey Danilowka",
 	"lines": [
 		"Thank heavens! I never expected anyone to find me this far from the evacuation fleet.",
 		"I was a crew member onboard the Starship Hawking. As you probably know, we never completed our mission to close the rift. The ship was destroyed, but most of us managed to escape in these capsules. I imagine you might run into a few more of the crew, scattered like crumbs in the cosmos.... Crumbs....",
@@ -153,10 +154,10 @@ vdata["1"] = {
 	"do": "hp",
 }
 vdata["2"] = {
-	"sname": "Danilowka",
+	"sname": "Paulson",
 	"avatar": "2",
 	"title": "Chief Mechanic",
-	"name": "Sergey Danilowka",
+	"name": "Donovan Paulson",
 	"lines": [
 		"I never thought I'd wind up floating through space in one of these capsules. It's all those damn scientists' fault.",
 		"You think my team had anything to do with what went wrong on the Hawking? No way, we had our jobs down pat. That weapon malfunctioned. Someone must have made a mistake. It's unthinkable.... to fail with so much on the line.",

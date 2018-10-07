@@ -133,9 +133,7 @@ let state = {
 	startgame: function () {
 		this.stage = 1
 		this.setbase()
-		this.shieldhp = this.shieldhp0
-		this.hp = this.hp0
-		this.downgrades = []
+		this.downgrade("upgrade")
 		this.met = {}
 		this.saved = {}
 		this.apickup = 0
@@ -451,14 +449,16 @@ let state = {
 			this.shieldhp -= 1
 			damage -= 1
 		}
-		this.hp -= damage
 		this.tinvulnerable = this.dtinvulnerable
 		this.you.iflash = this.tinvulnerable
-		if (this.hp <= 0) {
-			this.you.die()
-			audio.playsfx("you-die")
-		} else {
-			audio.playsfx("you-hurt")
+		if (!MIRACLE) {
+			this.hp -= damage
+			if (this.hp <= 0) {
+				this.you.die()
+				audio.playsfx("you-die")
+			} else {
+				audio.playsfx("you-hurt")
+			}
 		}
 	},
 

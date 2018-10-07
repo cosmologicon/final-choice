@@ -9,7 +9,7 @@ let settings = {
 	dialogvolume: 0.6,
 }
 let DEBUG = window.location.href.includes("DEBUG")
-
+let MIRACLE = window.location.href.includes("MIRACLE")
 
 UFX.key.remaparrows(true)
 UFX.key.remap({

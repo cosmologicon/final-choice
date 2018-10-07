@@ -4,6 +4,7 @@ UFX.scenes.climax = {
 	start: function () {
 		state.init()
 		state.stage = "climax"
+		state.tinvulnerable = 0
 		state.you = new You({ x: -200, y: 50 })
 		state.yous.push(state.you)
 		state.yous.push(new Him({}))
@@ -89,6 +90,7 @@ UFX.scenes.climax = {
 		}))
 	},
 	draw: function () {
+		draw.clear()
 		draw.nebula([1, 0.7, 0.4], [0, 0.5, 1], -100)
 		draw.starfly(-100)
 		draw.rocks(state.rocks.map(rock => rock.rockdata()))
@@ -114,6 +116,7 @@ UFX.scenes.win = {
 		this.played = false
 		audio.tochoose()
 		checkpoint = null
+		progress.beaten = true
 		state.recordprogress()
 	},
 	think: function (dt) {
