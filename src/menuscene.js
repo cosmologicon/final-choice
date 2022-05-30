@@ -43,10 +43,11 @@ UFX.scenes.menu = {
 		this.opts = this.opts.concat(this.opts0)
 	},
 	resume: function () {
-		console.log("resuming")
-		if (this.loaded) audio.tochoose(0)
 		this.makeopts()
-		//this.opt = this.opts[0]
+		if (this.loaded) {
+			audio.tochoose(0)
+			this.okopts = this.opts
+		}
 	},
 	think: function (dt) {
 		let kstate = UFX.key.state()
@@ -108,7 +109,7 @@ UFX.scenes.menu = {
 			this.drawline(text, 60 - 40 * jopt, 32, color)
 		})
 		if (this.f < 1) {
-			this.drawline("Loading... " + (100 * this.f).toFixed(0) + "%", -120, 24, "gray")
+			this.drawline("Loading... " + (100 * this.f).toFixed(0) + "%", 30 - 40 * this.opts.length, 24, "gray")
 		}
 		if (this.opt == "Play Easy" || this.opt == "Restart Easy") {
 			let text = "In Easy mode, crew members you've rescued on previous playthroughs will be automatically rescued."

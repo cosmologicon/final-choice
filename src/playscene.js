@@ -198,7 +198,8 @@ UFX.scenes.play = {
 			})
 		}
 		if (!this.haspaused) {
-			let text = "Esc: pause/help/settings"
+			let key = settings.fullscreen ? "P" : "Esc"
+			let text = key + ": pause/help/settings"
 			gl.progs.text.use()
 			gl.progs.text.draw(text, {
 				topright: [draw.wV - 10, draw.hV - 10],

@@ -2,3 +2,23 @@ To resize biopix:
 
 cp ../../pyjam/final-choice/data/biopix/*.jpg ../data/biopix
 mogrify -resize 256x256 ../data/biopix/*.jpg
+
+
+Make upload:
+
+cat index.html | grep src | grep -v UFX | grep -v setup | sed 's|.*src=.||;s|.>.*||' | xargs cat > /tmp/game.js
+cat index.html | grep src | grep UFX | sed 's|.*src=.||;s|.>.*||' | xargs cat > /tmp/UFX.js
+
+copy /tmp/game.js to
+https://babeljs.io/en/repl
+(Need to change preset to es2016)
+
+scp -r index.html src/setup.js /tmp/game.js /tmp/UFX.js data night@night.xen.prgmr.com:/var/www/choice
+
+On remote machine
+cd /var/www/choice
+nano index.html
+<script src="UFX.js"></script>
+<script src="setup.js"></script>
+<script src="game.js"></script>
+

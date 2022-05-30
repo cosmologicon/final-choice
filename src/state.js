@@ -136,6 +136,10 @@ let state = {
 		this.downgrade("upgrade")
 		this.met = {}
 		this.saved = {}
+		if (this.miracle) {
+			for (let s in progress.met) this.met[s] |= progress.met[s]
+			for (let s in progress.saved) this.saved[s] |= progress.saved[s]
+		}
 		this.apickup = 0
 		checkpoint = null
 		save.save()
@@ -149,7 +153,7 @@ let state = {
 		this.miracle = checkpoint.miracle
 		this.stage = checkpoint.stage
 		this.setbase()
-		this.downgrades = []
+		this.downgrade("upgrade")
 		checkpoint.downgrades.forEach(name => this.downgrade(name))
 		this.met = checkpoint.met
 		this.saved = checkpoint.saved

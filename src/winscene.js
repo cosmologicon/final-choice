@@ -47,6 +47,8 @@ UFX.scenes.climax = {
 			state.you.y = 0
 		}
 		state.hp = 100
+		state.tinvulnerable = 0
+		state.you.iflash = 0
 		state.sety0()
 		audio.think(dt)
 		if (state.you.alive && voplayer.done()) {
