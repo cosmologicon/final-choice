@@ -4,6 +4,8 @@
 
 "use strict"
 let audio = {
+	basedir: "data",
+	sfxnames: "boom boss-die enemy-die enemy-hurt get select shot0 shot1 shot2 start you-die you-hurt".split(" "),
 	// The quiet factor is a per-sfx value that is used to attenuate the sound effect's volume if
 	// it's played multiple times in fast succession. Every time a sound is played its corresponding
 	// quiet factor is increased by 1, and all quiet factors decay back to 0 over time. The larger
@@ -16,6 +18,9 @@ let audio = {
 	// form. A gamma factor greater than 1 means you have finer control at low volumes, and a gamma
 	// factor less than 1 means you have finer control at high volumes.
 	gamma: 1.7,
+
+	// For tracking progress of individual audio tracks.
+	tstart: {},
 
 	init: function () {
 		voplayer.init()
@@ -38,24 +43,24 @@ let audio = {
 		UFX.audio.setgain("dialog", 1)
 
 		let buffers = {
-			fly: "data/music/flying.ogg",
-			choose: "data/music/decision.ogg",
-			ballad: "data/music/ballad.ogg",
+			fly: this.basedir + "/music/flying.ogg",
+			choose: this.basedir + "/music/decision.ogg",
+			ballad: this.basedir + "/music/ballad.ogg",
 		}
 		for (let dname in Dlines) {
 			Dlines[dname].forEach(line => {
 				let sname = line[0]
-				buffers[sname] = "data/dialog/" + sname + ".ogg"
+				buffers[sname] = this.basedir + "/dialog/" + sname + ".ogg"
 			})
 		}
 		for (let cname in vdata) {
 			for (let i of [1, 2, 3]) {
 				let sname = vdata[cname].sname + i
-				buffers[sname] = "data/dialog/" + sname + ".ogg"
+				buffers[sname] = this.basedir + "/dialog/" + sname + ".ogg"
 			}
 		}
-		;"boom boss-die enemy-die enemy-hurt get select shot0 shot1 shot2 start you-die you-hurt".split(" ").forEach(sname => {
-			buffers[sname] = "data/sfx/" + sname + ".ogg"
+		this.sfxnames.forEach(sname => {
+			buffers[sname] = this.basedir + "/sfx/" + sname + ".ogg"
 		})
 		UFX.audio.loadbuffers(buffers)
 		this.musicnodes = []
@@ -110,8 +115,18 @@ let audio = {
 		let volume = Math.exp(-0.7 * Q)
 		let bname = sname
 		if (bname == "shot") bname += UFX.random.choice([0, 1, 2])
-		UFX.audio.playbuffer(bname, { output: "sfx", gain: volume }),
+		UFX.audio.playbuffer(bname, { name: bname, output: "sfx", gain: volume }),
 		this.quiet[sname] = Q + 1
+		this.tstart[sname] = UFX.audio.context.currentTime
+	},
+	progress: function (sname) {
+		console.log(sname, UFX.audio.nodes[sname], this.tstart[sname])
+		if (!UFX.audio.nodes[sname]) return null
+		if (!(sname in this.tstart)) return null
+		let dt = UFX.audio.context.currentTime - this.tstart[sname]
+		let f = dt / UFX.audio.nodes[sname].buffer.duration
+		if (UFX.audio.nodes[sname].loop) f %= 1
+		return Math.min(Math.max(f, 0), 1)
 	},
 
 	stopmusic: function () {
@@ -123,13 +138,15 @@ let audio = {
 		if (!UFX.audio.context) return
 		if (pvolume === undefined) pvolume = 1
 		this.stopmusic()
-		this.tochoose()
+		this.tochoose(0)
 		this.musicnodes = [
 			UFX.audio.playbuffer("fly", { name: "fly", output: "flygain", loop: true, cleanup: true, }),
 			UFX.audio.playbuffer("choose", { name: "choose", output: "choosegain", loop: true, cleanup: true, }),
 		]
 		UFX.audio.setgain("musicfade", 0)
 		UFX.audio.setgain("musicfade", 1, { fade: 5, })
+		this.tstart.fly = UFX.audio.context.currentTime
+		this.tstart.choose = UFX.audio.context.currentTime
 	},
 	tofly: function (dt) {
 		if (!UFX.audio.context) return
@@ -164,6 +181,7 @@ let audio = {
 		]
 		UFX.audio.setgain("endmusic", 0)
 		UFX.audio.setgain("endmusic", 1, {fade: 0.5})
+		this.tstart.ballad = UFX.audio.context.currentTime
 	},
 
 	stopdialog: function () {
@@ -238,6 +256,11 @@ let voplayer = {
 	done: function () {
 		return this.current == null && !this.queue.length && this.alpha == 0
 	},
+	fonts: {
+		N: ["Fjalla One", 21, "#BBF", 1.2],
+		J: ["Lalezar", 21, "#BFB", 1],
+		C: ["Bungee", 18, "#FA5", 1.2],
+	},
 	draw: function () {
 		if (!this.current || this.alpha == 0) return
 		let [buffername, avatar, who, text] = this.current
@@ -245,11 +268,7 @@ let voplayer = {
 			let pos = yswap(settings.portrait ? T(56, 800) : T(100, 426))
 			draw.avatar(avatar, pos, T(90), this.alpha, true)
 		}
-		let [fontname, fontsize, color, lineheight] = {
-			N: ["Fjalla One", 21, "#BBF", 1.2],
-			J: ["Lalezar", 21, "#BFB", 1],
-			C: ["Bungee", 18, "#FA5", 1.2],
-		}[who] || [null, 28, "white", 1]
+		let [fontname, fontsize, color, lineheight] = this.fonts[who] || [null, 28, "white", 1]
 		fontsize = T(fontsize)
 		let width = settings.portrait ? T(340) : T(540)
 		let pos = yswap(settings.portrait ? T(110, 846) : T(170, 472))

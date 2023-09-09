@@ -51,6 +51,7 @@ UFX.scenes.menu = {
 	},
 	think: function (dt) {
 		let kstate = UFX.key.state()
+		if (audio.on && Object.keys(kstate.down).length > 0) audio.resume()
 		if (kstate.down.down || kstate.down.right) {
 			this.opt = lnext(this.okopts, this.opt)
 			this.moved = true

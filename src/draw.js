@@ -361,6 +361,19 @@ let draw = {
 		})
 		gl.drawArrays(gl.TRIANGLES, 0, data.nvert)
 	},
+	avatartext: {
+		"1": "Dr. Danilowka",
+		"2": "Chf. Paulson",
+		"3": "Lt. Jusuf",
+		"4": "Dr. Osaretin",
+		"5": "Mr. Tannenbaum",
+		"6": "Cmdr. Cooper",
+		"X": "Mr. Graves",
+		"J": "Prof. Jyn",
+		"C": "Gen. Cutter",
+		"7": "Capt. Gabriel",
+		"A": "Capt. Alyx",
+	},
 	avatar: function (name, pos, s, a, showtitle) {
 		a = Math.clamp(a, 0, 1)
 		if (a == 0) return
@@ -383,20 +396,7 @@ let draw = {
 		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
 		if (showtitle && a == 1) {
 			gl.progs.text.use()
-			let text = {
-				"1": "Dr. Danilowka",
-				"2": "Chf. Paulson",
-				"3": "Lt. Jusuf",
-				"4": "Dr. Osaretin",
-				"5": "Mr. Tannenbaum",
-				"6": "Cmdr. Cooper",
-				"X": "Mr. Graves",
-				"J": "Prof. Jyn",
-				"C": "Gen. Cutter",
-				"7": "Capt. Gabriel",
-				"A": "Capt. Alyx",
-			}[name]
-			UFX.gltext(text, {
+			UFX.gltext(this.avatartext[name], {
 				centerx: pos[0],
 				bottom: pos[1] - 0.5 * s,
 				owidth: 2,
