@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <title>The Final Choice | sound test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="http://ufx.space/UFX.js"></script>
 <script src="../../UFX/src/audio.js"></script>
 <script src="../src/visitscene.js"></script>
 <script src="../src/audio.js"></script>
-<canvas id="canvas"></canvas>
+<canvas id="canvas" style="background: #111;"></canvas>
 <script>
 "use strict"
 window.onerror = function (error, url, line) {
@@ -18,7 +19,7 @@ let settings = {
 }
 audio.basedir = "../data"
 audio.init()
-UFX.maximize(canvas, { aspects: [16/9], fillcolor: "#111" })
+UFX.maximize(canvas, { aspects: [9/16, 16/9], fillcolor: "#111" })
 let context = canvas.getContext("2d")
 UFX.draw.setcontext(context)
 
@@ -79,14 +80,22 @@ function drawwaves() {
 	}
 }
 function drawcrew() {
-	;"1234X567".split("").forEach((name, j) => {
+	;"1234567X".split("").forEach((name, j) => {
 		let img = UFX.resource.images["bio-" + name]
-		UFX.draw("[ t", 380 + 150 * j, 160,
-			"[ z 0.5 0.5 drawimage0", img, "]",
-			"t 64 136 tab center top font 20px~'Lalezar' fs white ss black lw 2",
-			"sft0", vdata[name].name.replaceAll(" ", "~"),
-			"t 0 20 sft0", vdata[name].title.replaceAll(" ", "~"),
-			"]")
+		if (portrait) {
+			UFX.draw("[ t", 60, 180 + 82 * j,
+				"[ z 0.2 0.2 drawimage0", img, "]",
+				"t 0 54 tab left top font 20px~'Lalezar' fs white ss black lw 2",
+				"sft0", `${vdata[name].name} | ${vdata[name].title}`.replaceAll(" ", "~"),
+				"]")
+		} else {
+			UFX.draw("[ t", 380 + 150 * j, 160,
+				"[ z 0.5 0.5 drawimage0", img, "]",
+				"t 64 136 tab center top font 20px~'Lalezar' fs white ss black lw 2",
+				"sft0", vdata[name].name.replaceAll(" ", "~"),
+				"t 0 20 sft0", vdata[name].title.replaceAll(" ", "~"),
+				"]")
+		}
 	})
 }
 
@@ -95,10 +104,11 @@ function grid(n, cols, j) {
 	let j0 = 0
 	for (let col = 0 ; col < cols ; ++col) {
 		let rows = Math.floor(n / cols) + (n % cols > col ? 1 : 0)
-		if (j0 + rows > j) return [col, j - j0]
+		if (j0 + rows > j) return [col - (cols - 1) / 2, j - j0]
 		j0 += rows
 	}
 }
+/*
 function grid(name, n, cols, j, x0, y0, w, h, bx, by) {
 	let j0 = 0
 	for (let col = 0 ; col < cols ; ++col) {
@@ -107,22 +117,35 @@ function grid(name, n, cols, j, x0, y0, w, h, bx, by) {
 		j0 += rows
 	}
 }
+*/
+
+let portrait = false
+let menuopt = "MUSIC"
+let pmenu = true
+
 
 let menunames = ["MUSIC", "VOICEOVER", "CREW LINES", "SOUND FX", "VOLUME"]
-let menuopt = "MUSIC"
-let menubuttons = menunames.map((name, j) => [name, 160, 200 + 80 * j, 140, 30])
+let menubuttons = menunames.map((name, j) => [name, 160, 200 + 80 * j, 270, 300 + 80 * j, 140, 30])
 let musicbuttons = ["PLAY MUSIC", "STOP MUSIC", "FADE DOWN", "FADE UP", "END MUSIC"].map(
-	(name, j) => [name, 800, 240 + 80 * j, 140, 30])
-let sfxbuttons = audio.sfxnames.map((name, j, ns) => grid(name, ns.length, 2, j, 800, 240, 320, 80, 140, 30))
+	(name, j) => [name, 800, 240 + 80 * j, 270, 300 + 80 * j, 140, 30])
+let sfxbuttons = audio.sfxnames.map((name, j, ns) => {
+	let [x, y] = grid(ns.length, 2, j)
+	return [name, 800 + 320 * x, 240 + 80 * y, 270, 200 + 54 * j, 140, 30]
+})
 let vobnames = ["intro", "B", "D", "E", "A", "climax", "climax2"]
 	.map(name => "PLAY: " + name)
 	.concat(["STOP VOICEOVER"])
-let vobuttons = vobnames.map((name, j, ns) => grid(name, ns.length, 2, j, 800, 240, 400, 80, 180, 30))
-let linesbuttons = "1234X567".split("").map((name, x) => ["HI", "OK", "NO"].map(
-	(text, y) => [text + " " + name, 440 + 150 * x, 400 + 100 * y, 60, 30])).flat(1)
+let vobuttons = vobnames.map((name, j, ns) => {
+	let [x, y] = grid(ns.length, 2, j)
+	return [name, 800 + 400 * x, 240 + 80 * y, 270, 200 + 60 * j, 180, 30]
+})
+let linesbuttons = "1234567X".split("").map((name, x) => ["HI", "OK", "NO"].map(
+	(text, y) => [text + " " + name, 440 + 150 * x, 400 + 100 * y, 180 + 120 * y, 210 + 82 * x, 60, 30])).flat(1)
 let linesnames = linesbuttons.map(button => button[0])
 let volbuttons = ["SOUND FX", "MUSIC", "DIALOG"].map((name, j) =>
-	[name + " VOLUME: 60%", 800, 240 + 80 * j, 300, 30])
+	[name + " VOLUME: 60%", 800, 240 + 80 * j, 270, 240 + 80 * j, 300, 30])
+
+let backbutton = ["BACK TO MENU", 0, 0, 270, 900, 200, 30]
 let vols = [0, 0.2, 0.4, 0.6, 0.8, 1]
 function cyclevolume(vol) {
 	if (vol >= vols[vols.length - 1]) return vols[0]
@@ -144,16 +167,27 @@ function clickvol(channel) {
 }
 	
 function think(dt) {
+	portrait = canvas.width < canvas.height
+	let [w0, h0] = portrait ? [540, 960] : [1600, 900]
 	audio.think(dt)
 	let pstate = UFX.pointer(canvas)
-	let [mx, my] = pstate.pos ? [pstate.pos[0] * 1600 / canvas.width, pstate.pos[1] * 900 / canvas.height] : [-1000, -1000]
-	UFX.draw("fs #222 f0 [ z", canvas.width / 1600, canvas.height / 900)
-	UFX.draw("[ t 800 60 tab center middle",
-		"font 52px~'Bungee' fs white ss black lw 5",
-		"sft0 The~Final~Choice~sound~test ]")
+	let [mx, my] = pstate.pos ?
+		[pstate.pos[0] * w0 / canvas.width, pstate.pos[1] * h0 / canvas.height] :
+		[-1000, -1000]
+	UFX.draw("fs #222 f0 [ z", canvas.width / w0, canvas.height / h0)
+	if (portrait) {
+		UFX.draw("[ t 270 60 tab center middle",
+			"font 52px~'Bungee' fs white ss black lw 5",
+			"sft0 The~Final~Choice",
+			"t 0 60 sft0 sound~test ]")
+	} else {
+		UFX.draw("[ t 800 60 tab center middle",
+			"font 52px~'Bungee' fs white ss black lw 5",
+			"sft0 The~Final~Choice~sound~test ]")
+	}
 	if (UFX.resource.loaded) {
 		let pointed = null
-		let buttons = menubuttons.concat(
+		let obuttons = (
 			menuopt == "MUSIC" ? musicbuttons :
 			menuopt == "VOICEOVER" ? vobuttons :
 			menuopt == "CREW LINES" ? linesbuttons :
@@ -161,7 +195,10 @@ function think(dt) {
 			menuopt == "VOLUME" ? volbuttons :
 			[]
 		)
-		for (let [name, x, y, w, h] of buttons) {
+		let buttons = portrait ? (pmenu ? menubuttons : obuttons) : menubuttons.concat(obuttons)
+		if (portrait && !pmenu) buttons.push(backbutton)
+		for (let [name, xl, yl, xp, yp, w, h] of buttons) {
+			let [x, y] = portrait ? [xp, yp] : [xl, yl]
 			let color = buttoncolor(name)
 			UFX.draw("[ t", x, y, "tab center middle font 40px~'Bungee'",
 				"fs", color, "ss black lw 5 sft0", name.replaceAll(" ", "~"), "]")
@@ -171,7 +208,7 @@ function think(dt) {
 			}
 		}
 		// drawwaves()
-		if (menuopt == "CREW LINES") drawcrew()
+		if (menuopt == "CREW LINES" && !(portrait && pmenu)) drawcrew()
 		if (pstate.down && pointed !== null) onclick(pointed)
 	} else {
 		let pct = (UFX.resource.f * 100).toFixed(0)
@@ -185,7 +222,7 @@ function buttoncolor(bname) {
 	return buttonactive(bname) ? "white" : "gray"
 }
 function buttonactive(bname) {
-	if (menunames.includes(bname)) return bname == menuopt
+	if (menunames.includes(bname)) return portrait || bname == menuopt
 	if (audio.sfxnames.includes(bname)) return menuopt == "SOUND FX"
 	if (bname == "STOP VOICEOVER") return !voplayer.done()
 	if (vobnames.includes(bname)) return menuopt == "VOICEOVER"
@@ -201,6 +238,7 @@ function buttonactive(bname) {
 		case "FADE UP":
 			return audio.musicnodes.length == 2 && UFX.audio.nodes.flygain.gain.value != 1
 		case "END MUSIC": return audio.musicnodes.length != 1
+		case "BACK TO MENU": return true
 	}
 	return false
 }
@@ -212,8 +250,9 @@ function onclick(bname) {
 		case "FADE UP": audio.tofly() ; break
 		case "END MUSIC": audio.startendmusic() ; break
 		case "STOP VOICEOVER": voplayer.stop() ; break
+		case "BACK TO MENU": pmenu = true ; break
 	}
-	if (menunames.includes(bname)) { menuopt = bname ; return }
+	if (menunames.includes(bname)) { menuopt = bname ; pmenu = false ; return }
 	if (audio.sfxnames.includes(bname)) { audio.playsfx(bname) ; return }
 	if (vobnames.includes(bname) && bname.startsWith("PLAY: ")) {
 		audio.playvoiceover(bname.slice(6))
