@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<title>The Final Choice | sound test</title>
+<script src="http://ufx.space/UFX.js"></script>
+<script src="../../UFX/src/audio.js"></script>
+<script src="../src/visitscene.js"></script>
+<script src="../src/audio.js"></script>
+<canvas id="canvas"></canvas>
+<script>
+"use strict"
+window.onerror = function (error, url, line) {
+	document.body.innerHTML = "<p>Error in: "+url+"<p>line "+line+"<pre>"+error+"</pre>"
+}
+Math.clamp = (x, a, b) => x < a ? a : x > b ? b : x
+let settings = {
+	sfxvolume: 1,
+	musicvolume: 1,
+	dialogvolume: 1,
+}
+audio.basedir = "../data"
+audio.init()
+UFX.maximize(canvas, { aspects: [16/9], fillcolor: "#111" })
+let context = canvas.getContext("2d")
+UFX.draw.setcontext(context)
+
+
+UFX.resource.f = 0
+UFX.resource.loaded = false
+UFX.resource.onload = () => { UFX.resource.loaded = true }
+UFX.resource.onloading = (f) => { UFX.resource.f = f }
+
+let bufferimgs = {}
+function bufferimg(buffername) {
+	if (!bufferimgs[buffername]) {
+		let buffer = UFX.audio.buffers[buffername]
+		let canvas = document.createElement("canvas")
+		bufferimgs[buffername] = canvas
+		let context = canvas.getContext("2d")
+		let w = Math.floor(100 * Math.sqrt(buffer.duration)), h = 100
+		canvas.width = w ; canvas.height = h
+		let data = buffer.getChannelData(0)
+		let samples = Array.from({length: w}, () => [])
+		for (let j = 0 ; j < data.length ; ++j) {
+			let x = Math.floor(j * w / data.length)
+			samples[x].push(data[j])
+		}
+		UFX.draw(context, "fs #007 f0 ss #44a lw 1")
+		for (let x = 0 ; x < w ; ++x) {
+			let y = 50 - Math.floor(3 * 50 * rms(samples[x]))
+			UFX.draw(context, "b m", x, y, "l", x, h - y, "s")
+		}
+	}
+	return bufferimgs[buffername]
+}
+function rms(values) {
+	let s2 = 0
+	values.forEach(x => s2 += x * x)
+	return Math.sqrt(s2 / values.length)
+}
+function drawwave(buffername, x, y) {
+	if (!UFX.audio.nodes[buffername]) return
+	let img = bufferimg(buffername)
+	let x0 = x - img.width / 2, y0 = y - img.height / 2
+	UFX.draw("drawimage", img, x0, y0)
+	let f = audio.progress(buffername)
+	let dw = Math.floor((1 - f) * img.width)
+	UFX.draw("[ fs rgba(0,0,0,0.5) fr", x0 + img.width - dw, y0, dw, img.height, "]")
+	if (buffername == "fly" || buffername == "choose") {
+		let alpha = 0.5 * (1 - UFX.audio.nodes[buffername + "gain"].gain.value)
+		UFX.draw("[ alpha", alpha, "fs black fr", x0, y0, img.width - dw, img.height, "]")
+	}
+}
+function drawwaves() {
+	if (menuopt == "MUSIC") {
+		drawwave("fly", 800, 720)
+		drawwave("choose", 800, 840)
+		drawwave("ballad", 800, 840)
+	} else if (menuopt == "SOUND FX") {
+		audio.sfxnames.forEach(sfxname => drawwave(sfxname, 800, 840))
+	}
+}
+function drawcrew() {
+	;"1234X567".split("").forEach((name, j) => {
+		let img = UFX.resource.images["bio-" + name]
+		UFX.draw("[ t", 380 + 150 * j, 160,
+			"[ z 0.5 0.5 drawimage0", img, "]",
+			"t 64 136 tab center top font 20px~'Lalezar' fs white ss black lw 2",
+			"sft0", vdata[name].name.replaceAll(" ", "~"),
+			"t 0 20 sft0", vdata[name].title.replaceAll(" ", "~"),
+			"]")
+	})
+}
+
+
+function grid(n, cols, j) {
+	let j0 = 0
+	for (let col = 0 ; col < cols ; ++col) {
+		let rows = Math.floor(n / cols) + (n % cols > col ? 1 : 0)
+		if (j0 + rows > j) return [col, j - j0]
+		j0 += rows
+	}
+}
+function grid(name, n, cols, j, x0, y0, w, h, bx, by) {
+	let j0 = 0
+	for (let col = 0 ; col < cols ; ++col) {
+		let rows = Math.floor(n / cols) + (n % cols > col ? 1 : 0)
+		if (j0 + rows > j) return [name, x0 + (col - (cols - 1) / 2) * w, y0 + (j - j0) * h, bx, by]
+		j0 += rows
+	}
+}
+
+let menunames = ["MUSIC", "VOICEOVER", "CREW LINES", "SOUND FX", "VOLUME"]
+let menuopt = "MUSIC"
+let menubuttons = menunames.map((name, j) => [name, 160, 200 + 80 * j, 140, 30])
+let musicbuttons = ["PLAY MUSIC", "STOP MUSIC", "FADE DOWN", "FADE UP", "END MUSIC"].map(
+	(name, j) => [name, 800, 240 + 80 * j, 140, 30])
+let sfxbuttons = audio.sfxnames.map((name, j, ns) => grid(name, ns.length, 2, j, 800, 240, 320, 80, 140, 30))
+let vobnames = ["intro", "B", "D", "E", "A", "climax", "climax2"]
+	.map(name => "PLAY: " + name)
+	.concat(["STOP VOICEOVER"])
+let vobuttons = vobnames.map((name, j, ns) => grid(name, ns.length, 2, j, 800, 240, 400, 80, 180, 30))
+let linesbuttons = "1234X567".split("").map((name, x) => ["HI", "OK", "NO"].map(
+	(text, y) => [text + " " + name, 440 + 150 * x, 400 + 100 * y, 60, 30])).flat(1)
+let linesnames = linesbuttons.map(button => button[0])
+let volbuttons = ["SOUND FX", "MUSIC", "DIALOG"].map((name, j) =>
+	[name + " VOLUME: 60%", 800, 240 + 80 * j, 300, 30])
+let vols = [0, 0.2, 0.4, 0.6, 0.8, 1]
+function cyclevolume(vol) {
+	if (vol >= vols[vols.length - 1]) return vols[0]
+	return vols.find(v => v > vol)
+}
+let volumes = {	sfx: 0.6, music: 0.6, dialog: 0.6 }
+function setvols() {
+	volbuttons[0][0] = `SOUND FX VOLUME: ${(volumes.sfx * 100).toFixed(0)}%`
+	volbuttons[1][0] = `MUSIC VOLUME: ${(volumes.music * 100).toFixed(0)}%`
+	volbuttons[2][0] = `DIALOG VOLUME: ${(volumes.dialog * 100).toFixed(0)}%`
+	audio.setsfxvolume(volumes.sfx)
+	audio.setmusicvolume(volumes.music)
+	audio.setdialogvolume(volumes.dialog)
+}
+setvols()
+function clickvol(channel) {
+	volumes[channel] = cyclevolume(volumes[channel])
+	setvols()
+}
+	
+function think(dt) {
+	audio.think(dt)
+	let pstate = UFX.pointer(canvas)
+	let [mx, my] = pstate.pos ? [pstate.pos[0] * 1600 / canvas.width, pstate.pos[1] * 900 / canvas.height] : [-1000, -1000]
+	UFX.draw("fs #222 f0 [ z", canvas.width / 1600, canvas.height / 900)
+	UFX.draw("[ t 800 60 tab center middle",
+		"font 52px~'Bungee' fs white ss black lw 5",
+		"sft0 The~Final~Choice~sound~test ]")
+	if (UFX.resource.loaded) {
+		let pointed = null
+		let buttons = menubuttons.concat(
+			menuopt == "MUSIC" ? musicbuttons :
+			menuopt == "VOICEOVER" ? vobuttons :
+			menuopt == "CREW LINES" ? linesbuttons :
+			menuopt == "SOUND FX" ? sfxbuttons :
+			menuopt == "VOLUME" ? volbuttons :
+			[]
+		)
+		for (let [name, x, y, w, h] of buttons) {
+			let color = buttoncolor(name)
+			UFX.draw("[ t", x, y, "tab center middle font 40px~'Bungee'",
+				"fs", color, "ss black lw 5 sft0", name.replaceAll(" ", "~"), "]")
+			if (Math.abs(x - mx) < w && Math.abs(y - my) < h) {
+				pointed = name
+				UFX.draw("[ t", x, y, "ss white lw 2 sr", -w, -h, 2*w, 2*h, "]")
+			}
+		}
+		// drawwaves()
+		if (menuopt == "CREW LINES") drawcrew()
+		if (pstate.down && pointed !== null) onclick(pointed)
+	} else {
+		let pct = (UFX.resource.f * 100).toFixed(0)
+		UFX.draw("[ t 800 480 tab center middle font 64px~'Bungee' fs white ss black lw 5",
+			"sft0", `Loading...~${pct}%`, "]")
+	}
+
+	UFX.draw("]")
+}
+function buttoncolor(bname) {
+	return buttonactive(bname) ? "white" : "gray"
+}
+function buttonactive(bname) {
+	if (menunames.includes(bname)) return bname == menuopt
+	if (audio.sfxnames.includes(bname)) return menuopt == "SOUND FX"
+	if (bname == "STOP VOICEOVER") return !voplayer.done()
+	if (vobnames.includes(bname)) return menuopt == "VOICEOVER"
+	if (linesnames.includes(bname)) return menuopt == "CREW LINES"
+	if (bname.startsWith("SOUND FX VOLUME")) return menuopt = "VOLUME"
+	if (bname.startsWith("MUSIC VOLUME")) return menuopt = "VOLUME"
+	if (bname.startsWith("DIALOG VOLUME")) return menuopt = "VOLUME"
+	switch (bname) {
+		case "PLAY MUSIC": return audio.musicnodes.length != 2
+		case "STOP MUSIC": return audio.musicnodes.length != 0
+		case "FADE DOWN":
+			return audio.musicnodes.length == 2 && UFX.audio.nodes.choosegain.gain.value != 1
+		case "FADE UP":
+			return audio.musicnodes.length == 2 && UFX.audio.nodes.flygain.gain.value != 1
+		case "END MUSIC": return audio.musicnodes.length != 1
+	}
+	return false
+}
+function onclick(bname) {
+	switch (bname) {
+		case "PLAY MUSIC": audio.startgamemusic() ; break
+		case "STOP MUSIC": audio.stopmusic() ; break
+		case "FADE DOWN": audio.tochoose() ; break
+		case "FADE UP": audio.tofly() ; break
+		case "END MUSIC": audio.startendmusic() ; break
+		case "STOP VOICEOVER": voplayer.stop() ; break
+	}
+	if (menunames.includes(bname)) { menuopt = bname ; return }
+	if (audio.sfxnames.includes(bname)) { audio.playsfx(bname) ; return }
+	if (vobnames.includes(bname) && bname.startsWith("PLAY: ")) {
+		audio.playvoiceover(bname.slice(6))
+		return
+	}
+	if (linesnames.includes(bname)) {
+		let lnum = { "HI": "1", "OK": "2", "NO": "3" }[bname.slice(0, 2)]
+		let lname = vdata[bname.slice(3, 4)].sname
+		audio.playline(lname + lnum)
+	}
+	if (bname.startsWith("SOUND FX VOLUME")) clickvol("sfx")
+	if (bname.startsWith("MUSIC VOLUME")) clickvol("music")
+	if (bname.startsWith("DIALOG VOLUME")) clickvol("dialog")
+		
+}
+
+;"1234567ACJX".split("").forEach(a => {
+	UFX.resource.load([["bio-" + a, "../data/biopix/bio-" + a + ".jpg"]])
+})
+UFX.resource.loadwebfonts("Bungee", "Fjalla One", "Lalezar", "Londrina Solid", "Passion One", "Permanent Marker")
+UFX.ticker.init(think, null, { minfps: 5, maxfps: 120 })
+</script>
+
